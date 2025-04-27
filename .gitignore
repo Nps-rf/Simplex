@@ -1,0 +1,43 @@
+# Скомпилированные файлы
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+fm
+fm.exe
+
+# Директории зависимостей
+vendor/
+vendor.orig/
+
+# Данные IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Специфичные для проекта файлы
+.env
+.DS_Store
+Thumbs.db
+*.log
+*.json.backup
+
+# Временные файлы
+tmp/
+temp/
+
+# Данные для тестов
+testdata/
+
+# Директории сборки
+build/
+dist/
+bin/
+
+# Конфигурационные файлы пользователя
+*.local.conf 
