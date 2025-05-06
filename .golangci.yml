@@ -1,0 +1,30 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - revive   # лёгкий style‑guide
+  disable:
+    - dupl      # избыточно для CLI‑кода
+
+issues:
+  exclude-use-default: false
+
+  # → игнорируем errcheck + staticcheck в *_test.go
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - staticcheck
+        - unused
+
+linters-settings:
+  errcheck:
+    check-type-assertions: false
+    # функции, ошибку которых «простительно» не проверять
+    ignore: |
+      os:Close
