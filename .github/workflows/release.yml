@@ -32,10 +32,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate & attach SBOM (Syft)
-        uses: anchore/sbom-action@v0
-        with:
-          upload-release-assets: true
-
       - name: govulncheck
         uses: golang/govulncheck-action@v1
