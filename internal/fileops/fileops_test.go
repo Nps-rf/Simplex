@@ -379,6 +379,13 @@ func TestArchiver(t *testing.T) {
 		if _, err := os.Stat(zipFile); os.IsNotExist(err) {
 			t.Error("zip-архив не был создан")
 		}
+
+		// Проверяем, что исходные файлы существуют
+		for _, src := range sources {
+			if _, err := os.Stat(src); err != nil {
+				t.Fatalf("Исходный файл %s не существует: %v", src, err)
+			}
+		}
 	})
 
 	// Тест на извлечение содержимого архива
@@ -391,32 +398,33 @@ func TestArchiver(t *testing.T) {
 			t.Errorf("не удалось получить содержимое архива: %v", err)
 		}
 
-		// Проверяем, что в архиве есть два файла
+		// Проверяем, что в архиве есть только два файла верхнего уровня
 		if len(contents) != 2 {
 			t.Errorf("неверное количество элементов в архиве: получено %d, ожидалось 2", len(contents))
 		}
-
-		// Проверяем наличие файлов в списке содержимого
+		// Проверяем наличие только file1.txt и file2.txt
 		found1 := false
 		found2 := false
 		for _, item := range contents {
-			if strings.Contains(item, "file1.txt") {
+			if item == "file1.txt" {
 				found1 = true
 			}
-			if strings.Contains(item, "file2.txt") {
+			if item == "file2.txt" {
 				found2 = true
 			}
 		}
-
 		if !found1 || !found2 {
-			t.Error("не все файлы найдены в содержимом архива")
+			t.Error("не все файлы найдены в содержимом архива (ожидаются только file1.txt и file2.txt)")
 		}
+
+		// ВРЕМЕННО: выводим содержимое архива для отладки
+		t.Logf("Содержимое архива: %v", contents)
 	})
 
 	// Тест на распаковку архива
 	t.Run("ExtractArchive", func(t *testing.T) {
 		zipFile := filepath.Join(tempDir, "archive.zip")
-		extractDir := filepath.Join(tempDir, "extracted")
+		extractDir := filepath.Join(tempDir, "unzip_dir")
 
 		// Распаковываем архив
 		err := archiver.ExtractArchive(zipFile, extractDir)
@@ -429,14 +437,13 @@ func TestArchiver(t *testing.T) {
 			t.Error("директория для распаковки не была создана")
 		}
 
-		// Проверяем, что файлы были распакованы
+		// Проверяем, что распакованы только file1.txt и file2.txt
 		extractedFile1 := filepath.Join(extractDir, "file1.txt")
 		extractedFile2 := filepath.Join(extractDir, "file2.txt")
 
 		if _, err := os.Stat(extractedFile1); os.IsNotExist(err) {
 			t.Error("файл file1.txt не был распакован")
 		}
-
 		if _, err := os.Stat(extractedFile2); os.IsNotExist(err) {
 			t.Error("файл file2.txt не был распакован")
 		}
