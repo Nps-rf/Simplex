@@ -14,7 +14,12 @@ func TestFileOperator(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Инициализируем FileOperator
 	fileOperator := NewFileOperator()
@@ -216,7 +221,12 @@ func TestFileViewer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Создаем тестовый текстовый файл
 	testFile := filepath.Join(tempDir, "test.txt")
@@ -314,7 +324,12 @@ func TestArchiver(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Создаем тестовые файлы и директории для архивации
 	testFiles := []struct {
@@ -444,7 +459,12 @@ func TestPermissionsManager(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Создаем тестовый файл
 	testFile := filepath.Join(tempDir, "test_permissions.txt")

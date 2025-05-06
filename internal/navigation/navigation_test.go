@@ -13,7 +13,12 @@ func TestNavigator(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Создаем вложенные директории для тестирования
 	nestedDir := filepath.Join(tempDir, "nested")
@@ -96,7 +101,12 @@ func TestNavigator(t *testing.T) {
 		if err != nil {
 			t.Fatalf("не удалось создать тестовый файл: %v", err)
 		}
-		testFile.Close()
+		defer func() {
+			err := testFile.Close()
+			if err != nil {
+				t.Errorf("ошибка при закрытии файла: %v", err)
+			}
+		}()
 
 		// Переходим во временную директорию
 		err = navigator.ChangeDirectory(tempDir)
@@ -146,7 +156,12 @@ func TestBookmarkManager(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Создаем вложенную директорию
 	nestedDir := filepath.Join(tempDir, "nested")
@@ -222,7 +237,10 @@ func TestBookmarkManager(t *testing.T) {
 		// Очищаем существующие закладки
 		bookmarks := bookmarkManager.ListBookmarks()
 		for _, bookmark := range bookmarks {
-			bookmarkManager.RemoveBookmark(bookmark.Name)
+			err := bookmarkManager.RemoveBookmark(bookmark.Name)
+			if err != nil {
+				t.Errorf("ошибка при удалении закладки %s: %v", bookmark.Name, err)
+			}
 		}
 
 		// Добавляем две закладки
@@ -267,7 +285,12 @@ func TestFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Создаем тестовые файлы и директории
 	testFiles := []struct {
@@ -294,7 +317,12 @@ func TestFilter(t *testing.T) {
 			if err != nil {
 				t.Fatalf("не удалось создать файл %s: %v", path, err)
 			}
-			defer file.Close()
+			defer func() {
+				err := file.Close()
+				if err != nil {
+					t.Errorf("ошибка при закрытии файла: %v", err)
+				}
+			}()
 
 			// Устанавливаем размер файла
 			if err := file.Truncate(tf.size); err != nil {

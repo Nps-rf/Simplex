@@ -43,7 +43,7 @@ func NewFilterOptions() *FilterOptions {
 }
 
 // Filter фильтрует список записей директории согласно опциям фильтрации
-func Filter(entries []os.DirEntry, basePath string, options *FilterOptions) ([]os.DirEntry, error) {
+func Filter(entries []os.DirEntry, _ string, options *FilterOptions) ([]os.DirEntry, error) {
 	var result []os.DirEntry
 
 	for _, entry := range entries {

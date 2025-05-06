@@ -25,7 +25,11 @@ func (f *FileOperator) CreateFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("не удалось создать файл %s: %w", path, err)
 	}
-	defer func() { _ = file.Close() }()
+	defer func() {
+		if err := file.Close(); err != nil {
+			panic(fmt.Errorf("ошибка при закрытии файла %s: %w", path, err))
+		}
+	}()
 	return nil
 }
 
@@ -45,14 +49,22 @@ func (f *FileOperator) CopyFile(source, destination string) error {
 	if err != nil {
 		return fmt.Errorf("не удалось открыть исходный файл %s: %w", source, err)
 	}
-	defer func() { _ = src.Close() }()
+	defer func() {
+		if err := src.Close(); err != nil {
+			panic(fmt.Errorf("ошибка при закрытии исходного файла %s: %w", source, err))
+		}
+	}()
 
 	// Создаем файл назначения
 	dst, err := os.Create(destination)
 	if err != nil {
 		return fmt.Errorf("не удалось создать файл назначения %s: %w", destination, err)
 	}
-	defer func() { _ = dst.Close() }()
+	defer func() {
+		if err := dst.Close(); err != nil {
+			panic(fmt.Errorf("ошибка при закрытии файла назначения %s: %w", destination, err))
+		}
+	}()
 
 	// Копируем содержимое
 	_, err = io.Copy(dst, src)

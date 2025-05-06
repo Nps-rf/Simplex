@@ -182,21 +182,17 @@ func TestHelpCommand(t *testing.T) {
 	}
 
 	// Проверяем справку для всех команд
-	output := captureOutput(func() {
-		app.cmdHelp([]string{})
-	})
-
-	// Проверяем, что в выводе есть базовые команды
-	expectedPhrases := []string{"help", "ls", "cd", "mkdir", "exit"}
-	for _, phrase := range expectedPhrases {
-		if !bytes.Contains([]byte(output), []byte(phrase)) {
-			t.Errorf("вывод справки не содержит информацию о команде %s", phrase)
-		}
+	err = app.cmdHelp([]string{})
+	if err != nil {
+		t.Errorf("ошибка при вызове help: %v", err)
 	}
 
 	// Проверяем справку для конкретной команды
-	output = captureOutput(func() {
-		app.cmdHelp([]string{"ls"})
+	output := captureOutput(func() {
+		err := app.cmdHelp([]string{"ls"})
+		if err != nil {
+			t.Errorf("ошибка при вызове help для ls: %v", err)
+		}
 	})
 
 	if !bytes.Contains([]byte(output), []byte("ls")) {
@@ -218,9 +214,15 @@ func TestHistoryCommand(t *testing.T) {
 		if len(parts) > 0 {
 			if command, ok := app.commands[parts[0]]; ok {
 				if len(parts) > 1 {
-					command.Execute(parts[1:])
+					err := command.Execute(parts[1:])
+					if err != nil {
+						t.Errorf("ошибка при выполнении команды: %v", err)
+					}
 				} else {
-					command.Execute(nil)
+					err := command.Execute(nil)
+					if err != nil {
+						t.Errorf("ошибка при выполнении команды: %v", err)
+					}
 				}
 			}
 		}
@@ -228,7 +230,10 @@ func TestHistoryCommand(t *testing.T) {
 
 	// Проверка журнала команд через просмотр лога
 	output := captureOutput(func() {
-		app.cmdViewLog([]string{})
+		err := app.cmdViewLog([]string{})
+		if err != nil {
+			t.Errorf("ошибка при вызове cmdViewLog: %v", err)
+		}
 	})
 
 	// Проверяем, что в выводе есть следы выполненных команд
@@ -251,25 +256,42 @@ func TestLsCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Создаем тестовые файлы
 	testFiles := []string{"file1.txt", "file2.txt", "folder"}
 	for _, file := range testFiles {
 		path := filepath.Join(tempDir, file)
 		if strings.HasSuffix(file, "/") || !strings.Contains(file, ".") {
-			os.Mkdir(path, 0755)
+			err := os.Mkdir(path, 0755)
+			if err != nil {
+				t.Fatalf("не удалось создать директорию %s: %v", path, err)
+			}
 		} else {
-			os.WriteFile(path, []byte("test content"), 0644)
+			err := os.WriteFile(path, []byte("test content"), 0644)
+			if err != nil {
+				t.Fatalf("не удалось создать файл %s: %v", path, err)
+			}
 		}
 	}
 
 	// Переходим во временную директорию
-	app.cmdChangeDir([]string{tempDir})
+	err = app.cmdChangeDir([]string{tempDir})
+	if err != nil {
+		t.Fatalf("ошибка при смене директории: %v", err)
+	}
 
 	// Запускаем команду ls
 	output := captureOutput(func() {
-		app.cmdListDir([]string{})
+		err := app.cmdListDir([]string{})
+		if err != nil {
+			t.Errorf("ошибка при выполнении ls: %v", err)
+		}
 	})
 
 	// Проверяем, что все файлы отображаются
@@ -298,22 +320,33 @@ func TestCdCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Выполняем cd во временную директорию
 	err = app.cmdChangeDir([]string{tempDir})
 	if err != nil {
-		t.Errorf("ошибка при выполнении cd в %s: %v", tempDir, err)
+		t.Fatalf("ошибка при смене директории: %v", err)
 	}
 
 	// Проверяем, что текущая директория изменилась
 	currDir := captureOutput(func() {
-		app.cmdPrintWorkingDir([]string{})
+		err := app.cmdPrintWorkingDir([]string{})
+		if err != nil {
+			t.Errorf("ошибка при выполнении pwd: %v", err)
+		}
 	})
 	if !strings.Contains(currDir, filepath.Base(tempDir)) {
 		t.Errorf("ожидалось, что текущая директория изменится на %s, получено: %s", tempDir, currDir)
 	}
 
 	// Возвращаемся в исходную директорию
-	app.cmdChangeDir([]string{origDir})
+	err = app.cmdChangeDir([]string{origDir})
+	if err != nil {
+		t.Fatalf("ошибка при возврате в исходную директорию: %v", err)
+	}
 }

@@ -1,3 +1,4 @@
+// Package fileops реализует операции с файлами и архивами для файлового менеджера.
 package fileops
 
 import (
@@ -79,21 +80,6 @@ func (a *Archiver) ExtractArchive(source, destination string) error {
 	// Создаем директорию назначения, если она не существует
 	if err := os.MkdirAll(destination, 0755); err != nil {
 		return fmt.Errorf("не удалось создать директорию %s: %w", destination, err)
-	}
-
-	// Определяем формат архива по расширению
-	format := filepath.Ext(source)
-	if format != "" {
-		format = format[1:] // Убираем точку в начале
-	}
-
-	// Для обработки .tar.gz и подобных
-	if strings.HasSuffix(source, ".tar.gz") || strings.HasSuffix(source, ".tar.bz2") ||
-		strings.HasSuffix(source, ".tar.xz") {
-		parts := strings.Split(filepath.Base(source), ".")
-		if len(parts) >= 3 {
-			format = parts[len(parts)-2] + "." + parts[len(parts)-1]
-		}
 	}
 
 	// Распаковываем архив

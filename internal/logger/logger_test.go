@@ -14,7 +14,12 @@ func TestLogger(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Создаем логгер с временным файлом журнала
 	logFile := filepath.Join(tempDir, "test.log")

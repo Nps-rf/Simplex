@@ -41,7 +41,10 @@ func setupTestEnvironment(t *testing.T) (string, func()) {
 
 	// Возвращаем функцию очистки
 	cleanup := func() {
-		os.RemoveAll(tempDir)
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
 	}
 
 	return tempDir, cleanup
@@ -181,7 +184,12 @@ func TestSearchByContent_BigFileAndPermission(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	searcher := NewSearcher()
 
@@ -191,8 +199,14 @@ func TestSearchByContent_BigFileAndPermission(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать большой файл: %v", err)
 	}
-	f.Truncate(11 * 1024 * 1024) // 11 МБ
-	f.Close()
+	err = f.Truncate(11 * 1024 * 1024)
+	if err != nil {
+		t.Errorf("ошибка при Truncate: %v", err)
+	}
+	err = f.Close()
+	if err != nil {
+		t.Errorf("ошибка при Close: %v", err)
+	}
 
 	results, err := searcher.SearchByContent(tempDir, "что-то")
 	if err != nil {
@@ -206,8 +220,16 @@ func TestSearchByContent_BigFileAndPermission(t *testing.T) {
 
 	// Создаем файл без прав на чтение
 	noPermFile := filepath.Join(tempDir, "noperm.txt")
-	os.WriteFile(noPermFile, []byte("секрет"), 0000)
-	defer os.Chmod(noPermFile, 0644) // чтобы можно было удалить
+	err = os.WriteFile(noPermFile, []byte("секрет"), 0000)
+	if err != nil {
+		t.Errorf("ошибка при записи файла: %v", err)
+	}
+	defer func() {
+		err := os.Chmod(noPermFile, 0644)
+		if err != nil {
+			t.Errorf("ошибка при изменении прав доступа файла: %v", err)
+		}
+	}()
 	results, err = searcher.SearchByContent(tempDir, "секрет")
 	if err != nil {
 		t.Errorf("ошибка при поиске по содержимому: %v", err)

@@ -166,7 +166,7 @@ func (m *macSoftDeleter) MoveToTrash(path string) error {
 	return os.Rename(path, dest)
 }
 
-func (m *macSoftDeleter) RestoreFromTrash(fileName string) error {
+func (m *macSoftDeleter) RestoreFromTrash(_ string) error {
 	// Для macOS: восстановление не реализовано (нет .trashinfo)
 	return fmt.Errorf("восстановление не поддерживается на macOS")
 }
@@ -232,7 +232,7 @@ func (w *windowsSoftDeleter) MoveToTrash(path string) error {
 	return os.Rename(path, dest)
 }
 
-func (w *windowsSoftDeleter) RestoreFromTrash(fileName string) error {
+func (w *windowsSoftDeleter) RestoreFromTrash(_ string) error {
 	// Для Windows: восстановление не реализовано (нет .trashinfo)
 	return fmt.Errorf("восстановление не поддерживается на Windows")
 }

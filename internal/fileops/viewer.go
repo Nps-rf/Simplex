@@ -27,7 +27,11 @@ func (v *FileViewer) ViewTextFile(path string, startLine, maxLines int) ([]strin
 	if err != nil {
 		return nil, fmt.Errorf("не удалось открыть файл %s: %w", path, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			panic(fmt.Errorf("ошибка при закрытии файла %s: %w", path, err))
+		}
+	}()
 
 	// Проверяем, является ли файл бинарным
 	if isBinaryFile(file) {
@@ -75,7 +79,11 @@ func (v *FileViewer) GetTotalLines(path string) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("не удалось открыть файл %s: %w", path, err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			panic(fmt.Errorf("ошибка при закрытии файла %s: %w", path, err))
+		}
+	}()
 
 	lineCount := 0
 	scanner := bufio.NewScanner(file)

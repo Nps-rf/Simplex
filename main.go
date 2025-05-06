@@ -1,3 +1,4 @@
+// Package main — точка входа в файловый менеджер.
 package main
 
 import (

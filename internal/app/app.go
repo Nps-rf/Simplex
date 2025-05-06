@@ -1,3 +1,4 @@
+// Package app реализует основную логику командного интерфейса файлового менеджера.
 package app
 
 import (
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"errors"
 	"file-manager/internal/display"
 	"file-manager/internal/fileops"
 	"file-manager/internal/logger"
@@ -262,7 +264,7 @@ func (a *App) processCommand(input string) error {
 	if !exists {
 		errMsg := fmt.Sprintf("Неизвестная команда: %s. Введите 'help' для просмотра доступных команд.", cmdName)
 		fmt.Println(errMsg)
-		return fmt.Errorf(errMsg)
+		return errors.New(errMsg)
 	}
 
 	err := cmd.Execute(args)
@@ -278,7 +280,7 @@ func (a *App) processCommand(input string) error {
 
 // Команды файлового менеджера
 
-func (a *App) cmdHelp(args []string) error {
+func (a *App) cmdHelp(_ []string) error {
 	fmt.Println("Доступные команды:")
 
 	// Группируем команды по категориям
@@ -320,7 +322,7 @@ func (a *App) cmdHelp(args []string) error {
 	return nil
 }
 
-func (a *App) cmdListDir(args []string) error {
+func (a *App) cmdListDir(_ []string) error {
 	entries, err := a.navigator.ListDirectory()
 	if err != nil {
 		return err
@@ -356,7 +358,7 @@ func (a *App) cmdChangeDir(args []string) error {
 	return a.navigator.ChangeDirectory(args[0])
 }
 
-func (a *App) cmdPrintWorkingDir(args []string) error {
+func (a *App) cmdPrintWorkingDir(_ []string) error {
 	fmt.Println(a.navigator.GetCurrentDirectory())
 	return nil
 }
@@ -472,7 +474,7 @@ func (a *App) cmdFileInfo(args []string) error {
 	return nil
 }
 
-func (a *App) cmdExit(args []string) error {
+func (a *App) cmdExit(_ []string) error {
 	a.isRunning = false
 	return nil
 }
@@ -765,7 +767,7 @@ func (a *App) cmdToggleColors(_ []string) error {
 	return nil
 }
 
-func (a *App) cmdEmptyTrash(args []string) error {
+func (a *App) cmdEmptyTrash(_ []string) error {
 	err := a.fileOperator.SoftDeleter.EmptyTrash()
 	if err != nil {
 		return fmt.Errorf("ошибка при очистке корзины: %w", err)
@@ -774,7 +776,7 @@ func (a *App) cmdEmptyTrash(args []string) error {
 	return nil
 }
 
-func (a *App) cmdTrashList(args []string) error {
+func (a *App) cmdTrashList(_ []string) error {
 	files, err := a.fileOperator.SoftDeleter.ListTrash()
 	if err != nil {
 		return fmt.Errorf("ошибка при получении содержимого корзины: %w", err)

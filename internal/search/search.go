@@ -1,3 +1,4 @@
+// Package search реализует функции поиска файлов и по содержимому для файлового менеджера.
 package search
 
 import (
@@ -77,7 +78,12 @@ func (s *Searcher) SearchByContent(root, content string) ([]string, error) {
 		if err != nil {
 			return nil // Пропускаем файлы, которые не можем открыть
 		}
-		defer file.Close()
+		defer func() {
+			err := file.Close()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
+			}
+		}()
 
 		// Сканируем файл построчно
 		scanner := bufio.NewScanner(file)
@@ -139,7 +145,12 @@ func (s *Searcher) SearchByRegex(root, regexPattern string) ([]string, error) {
 		if err != nil {
 			return nil // Пропускаем файлы, которые не можем открыть
 		}
-		defer file.Close()
+		defer func() {
+			err := file.Close()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
+			}
+		}()
 
 		// Сканируем файл построчно
 		scanner := bufio.NewScanner(file)

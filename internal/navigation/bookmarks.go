@@ -1,3 +1,4 @@
+// Package navigation реализует навигацию и работу с закладками для файлового менеджера.
 package navigation
 
 import (

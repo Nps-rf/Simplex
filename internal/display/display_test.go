@@ -13,7 +13,12 @@ func TestDisplay(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Создаем тестовые файлы различных типов
 	testFiles := []struct {
@@ -36,7 +41,8 @@ func TestDisplay(t *testing.T) {
 	// Создаем тестовые файлы
 	for _, tf := range testFiles {
 		filePath := filepath.Join(tempDir, tf.name)
-		if err := os.WriteFile(filePath, []byte(tf.content), 0644); err != nil {
+		err := os.WriteFile(filePath, []byte(tf.content), 0644)
+		if err != nil {
 			t.Fatalf("не удалось создать тестовый файл %s: %v", tf.name, err)
 		}
 
@@ -227,10 +233,18 @@ func TestIsDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	filePath := filepath.Join(tempDir, "file.txt")
-	os.WriteFile(filePath, []byte("test"), 0644)
+	err = os.WriteFile(filePath, []byte("test"), 0644)
+	if err != nil {
+		t.Fatalf("не удалось создать тестовый файл %s: %v", "file.txt", err)
+	}
 
 	isDir, err := isDirectory(tempDir)
 	if err != nil {

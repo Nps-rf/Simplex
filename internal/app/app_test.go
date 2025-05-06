@@ -15,7 +15,12 @@ func TestApp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		if err != nil {
+			t.Errorf("ошибка при удалении временной директории: %v", err)
+		}
+	}()
 
 	// Инициализируем приложение
 	app, err := NewApp()
@@ -118,7 +123,10 @@ func TestApp(t *testing.T) {
 
 		// Тест на поиск по имени
 		results := captureOutput(func() {
-			app.cmdFindByName([]string{"*.txt"})
+			err := app.cmdFindByName([]string{"*.txt"})
+			if err != nil {
+				t.Errorf("ошибка при поиске по имени: %v", err)
+			}
 		})
 
 		if !strings.Contains(results, "search_test.txt") {
@@ -127,7 +135,10 @@ func TestApp(t *testing.T) {
 
 		// Тест на поиск по содержимому
 		results = captureOutput(func() {
-			app.cmdFindByContent([]string{"тестовый"})
+			err := app.cmdFindByContent([]string{"тестовый"})
+			if err != nil {
+				t.Errorf("ошибка при поиске по содержимому: %v", err)
+			}
 		})
 
 		if !strings.Contains(results, "search_test.txt") {
@@ -145,7 +156,10 @@ func TestApp(t *testing.T) {
 
 		// Проверяем, что закладка добавлена
 		output := captureOutput(func() {
-			app.cmdManageBookmarks([]string{"list"})
+			err := app.cmdManageBookmarks([]string{"list"})
+			if err != nil {
+				t.Errorf("ошибка при выводе списка закладок: %v", err)
+			}
 		})
 
 		if !strings.Contains(output, "temp") || !strings.Contains(output, tempDir) {
@@ -177,7 +191,10 @@ func TestApp(t *testing.T) {
 
 		// Восстанавливаем исходное состояние
 		if app.display.UseColors != initialState {
-			app.cmdToggleColors([]string{})
+			err := app.cmdToggleColors([]string{})
+			if err != nil {
+				t.Errorf("ошибка при восстановлении состояния цветов: %v", err)
+			}
 		}
 	})
 
@@ -209,8 +226,14 @@ func TestApp(t *testing.T) {
 	t.Run("ViewFileCommand", func(t *testing.T) {
 		fileName := "view_test.txt"
 		filePath := filepath.Join(tempDir, fileName)
-		os.WriteFile(filePath, []byte("line1\nline2\nline3\n"), 0644)
-		app.cmdChangeDir([]string{tempDir})
+		err := os.WriteFile(filePath, []byte("line1\nline2\nline3\n"), 0644)
+		if err != nil {
+			t.Fatalf("не удалось создать файл для просмотра: %v", err)
+		}
+		err = app.cmdChangeDir([]string{tempDir})
+		if err != nil {
+			t.Errorf("ошибка при смене директории: %v", err)
+		}
 		// Корректный вызов
 		if err := app.cmdViewFile([]string{fileName}); err != nil {
 			t.Errorf("ошибка при просмотре файла: %v", err)
@@ -225,8 +248,14 @@ func TestApp(t *testing.T) {
 	t.Run("ChangePermissionsCommand", func(t *testing.T) {
 		fileName := "perm_test.txt"
 		filePath := filepath.Join(tempDir, fileName)
-		os.WriteFile(filePath, []byte("test"), 0644)
-		app.cmdChangeDir([]string{tempDir})
+		err := os.WriteFile(filePath, []byte("test"), 0644)
+		if err != nil {
+			t.Fatalf("не удалось создать файл для просмотра: %v", err)
+		}
+		err = app.cmdChangeDir([]string{tempDir})
+		if err != nil {
+			t.Errorf("ошибка при смене директории: %v", err)
+		}
 		if err := app.cmdChangePermissions([]string{"0644", fileName}); err != nil {
 			t.Errorf("ошибка при смене прав: %v", err)
 		}
@@ -238,9 +267,15 @@ func TestApp(t *testing.T) {
 	// Тест на архивирование и распаковку (archive, extract, list-archive)
 	t.Run("ArchiveCommands", func(t *testing.T) {
 		fileName := "arch_test.txt"
-		os.WriteFile(filepath.Join(tempDir, fileName), []byte("archive me"), 0644)
+		err = os.WriteFile(filepath.Join(tempDir, fileName), []byte("archive me"), 0644)
+		if err != nil {
+			t.Fatalf("не удалось создать файл для архивации: %v", err)
+		}
+		err := app.cmdChangeDir([]string{tempDir})
+		if err != nil {
+			t.Errorf("ошибка при смене директории: %v", err)
+		}
 		archiveName := "test.zip"
-		app.cmdChangeDir([]string{tempDir})
 		// Архивация
 		if err := app.cmdCreateArchive([]string{archiveName, "zip", fileName}); err != nil {
 			t.Errorf("ошибка при создании архива: %v", err)
@@ -251,7 +286,10 @@ func TestApp(t *testing.T) {
 		}
 		// Распаковка
 		extractDir := "extract_dir"
-		os.Mkdir(filepath.Join(tempDir, extractDir), 0755)
+		err = os.Mkdir(filepath.Join(tempDir, extractDir), 0755)
+		if err != nil {
+			t.Fatalf("не удалось создать директорию для распаковки: %v", err)
+		}
 		if err := app.cmdExtractArchive([]string{archiveName, extractDir}); err != nil {
 			t.Errorf("ошибка при распаковке архива: %v", err)
 		}
@@ -269,11 +307,12 @@ func TestApp(t *testing.T) {
 
 	// Тест на фильтрацию (filter)
 	t.Run("FilterCommand", func(t *testing.T) {
-		app.cmdChangeDir([]string{tempDir})
-		if err := app.cmdFilter([]string{"--ext=txt"}); err != nil {
+		err := app.cmdFilter([]string{"--ext=txt"})
+		if err != nil {
 			t.Errorf("ошибка при применении фильтра: %v", err)
 		}
-		if err := app.cmdFilter([]string{}); err != nil {
+		err = app.cmdFilter([]string{})
+		if err != nil {
 			t.Errorf("ошибка при сбросе фильтра: %v", err)
 		}
 	})
@@ -292,18 +331,17 @@ func captureOutput(f func()) string {
 	f()
 
 	// Закрываем writer, чтобы весь вывод был отправлен в reader
-	w.Close()
+	err := w.Close()
 	os.Stdout = oldStdout
+	if err != nil {
+		panic(err)
+	}
 
 	// Читаем вывод из reader
 	var buf strings.Builder
-	io.Copy(&buf, r)
+	_, err = io.Copy(&buf, r)
+	if err != nil {
+		panic(err)
+	}
 	return buf.String()
-}
-
-// Mocking some dependencies for testing
-func mockApp() *App {
-	// Создаем минимальную версию App для тестирования
-	app, _ := NewApp()
-	return app
 }

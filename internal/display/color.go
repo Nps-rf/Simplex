@@ -1,8 +1,10 @@
+// Package display реализует отображение информации и цветовой вывод для файлового менеджера.
 package display
 
 import (
-	"github.com/fatih/color"
 	"os"
+
+	"github.com/fatih/color"
 
 	"github.com/mattn/go-isatty"
 )
@@ -11,19 +13,31 @@ var (
 	// Проверяем, поддерживает ли терминал цвета
 	useColors = isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd())
 
-	// Определяем различные цвета для разных типов файлов
-	DirColor      = color.New(color.FgBlue, color.Bold)
-	FileColor     = color.New(color.FgWhite)
-	ExecColor     = color.New(color.FgGreen, color.Bold)
-	SymlinkColor  = color.New(color.FgCyan, color.Bold)
-	HeaderColor   = color.New(color.FgYellow, color.Bold)
-	ErrorColor    = color.New(color.FgRed, color.Bold)
-	WarningColor  = color.New(color.FgYellow)
-	SuccessColor  = color.New(color.FgGreen)
-	ArchiveColor  = color.New(color.FgMagenta)
-	ImageColor    = color.New(color.FgHiMagenta)
-	AudioColor    = color.New(color.FgHiBlue)
-	VideoColor    = color.New(color.FgHiCyan)
+	// DirColor используется для отображения директорий
+	DirColor = color.New(color.FgBlue, color.Bold)
+	// FileColor используется для отображения обычных файлов
+	FileColor = color.New(color.FgWhite)
+	// ExecColor используется для отображения исполняемых файлов
+	ExecColor = color.New(color.FgGreen, color.Bold)
+	// SymlinkColor используется для отображения символических ссылок
+	SymlinkColor = color.New(color.FgCyan, color.Bold)
+	// HeaderColor используется для заголовков
+	HeaderColor = color.New(color.FgYellow, color.Bold)
+	// ErrorColor используется для ошибок
+	ErrorColor = color.New(color.FgRed, color.Bold)
+	// WarningColor используется для предупреждений
+	WarningColor = color.New(color.FgYellow)
+	// SuccessColor используется для успешных сообщений
+	SuccessColor = color.New(color.FgGreen)
+	// ArchiveColor используется для архивов
+	ArchiveColor = color.New(color.FgMagenta)
+	// ImageColor используется для изображений
+	ImageColor = color.New(color.FgHiMagenta)
+	// AudioColor используется для аудиофайлов
+	AudioColor = color.New(color.FgHiBlue)
+	// VideoColor используется для видеофайлов
+	VideoColor = color.New(color.FgHiCyan)
+	// DocumentColor используется для документов
 	DocumentColor = color.New(color.FgHiYellow)
 )
 
