@@ -1,0 +1,50 @@
+project_name: simplex
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: default
+    main: ./cmd/simplex
+    goos: [linux, windows, darwin]
+    goarch: [amd64, arm64]
+    flags:     
+      - -trimpath
+    ldflags:
+      - |
+        -s -w \
+        -X main.version={{ .Version }} \
+        -X main.commit={{ .Commit }} \
+        -X main.date={{ .Date }}
+
+archives:
+  - id: binaries
+    format_overrides:
+      - goos: windows
+        format: zip   # для Windows лучше ZIP
+    # остальные ОС → tar.gz по умолчанию
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+
+dockers:
+  - image_templates:
+      - ghcr.io/{{ .Repo }}/{{ .ProjectName }}:{{ .Tag }}
+      - ghcr.io/{{ .Repo }}/{{ .ProjectName }}:latest
+    goos: linux
+    goarch: [amd64, arm64]
+    use: buildx
+    extra_files:
+      - LICENSE
+    build_flag_templates:
+      - --platform=linux/{{ .Arch }}
+
+sboms:
+  - path: sbom.spdx
+    source: docker        # SBOM для контейнера
+
+signs:
+  - artifacts: checksum
+    cmd: cosign
+    args: ['sign', '--key', 'cosign.key', '{{ .ArtifactPath }}']
