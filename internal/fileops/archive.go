@@ -32,18 +32,20 @@ func (a *Archiver) ArchiveFiles(sources []string, destination string, format str
 		}
 	}
 	format = strings.ToLower(format)
-	if format == "zip" {
+	switch format {
+	case "zip":
 		return a.archiveZip(sources, destination)
-	} else if format == "tar.gz" || format == "tgz" {
+	case "tar.gz", "tgz":
 		return a.archiveTarCompressed(sources, destination, "gz")
-	} else if format == "tar.bz2" || format == "tbz2" {
+	case "tar.bz2", "tbz2":
 		return a.archiveTarCompressed(sources, destination, "bz2")
-	} else if format == "tar.xz" || format == "txz" {
+	case "tar.xz", "txz":
 		return a.archiveTarCompressed(sources, destination, "xz")
-	} else if format == "tar" {
+	case "tar":
 		return a.archiveTar(sources, destination)
+	default:
+		return fmt.Errorf("поддерживаются только zip, tar, tar.gz, tar.bz2, tar.xz")
 	}
-	return fmt.Errorf("поддерживаются только zip, tar, tar.gz, tar.bz2, tar.xz")
 }
 
 func (a *Archiver) archiveZip(sources []string, destination string) error {
@@ -79,8 +81,7 @@ func (a *Archiver) archiveTarCompressed(sources []string, destination, compressi
 		return fmt.Errorf("не удалось создать архив: %w", err)
 	}
 	defer func() {
-		err := file.Close()
-		if err != nil {
+		if err := file.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
 		}
 	}()
@@ -89,23 +90,34 @@ func (a *Archiver) archiveTarCompressed(sources []string, destination, compressi
 	switch compression {
 	case "gz":
 		gw := gzip.NewWriter(file)
-		defer gw.Close()
+		defer func() {
+			if err := gw.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "ошибка при закрытии gzip writer: %v\n", err)
+			}
+		}()
 		writer = gw
 	case "bz2":
-		// bzip2 нет для записи в stdlib, используем внешний пакет или не поддерживаем
 		return fmt.Errorf("создание tar.bz2 не поддерживается стандартной библиотекой Go")
 	case "xz":
 		xzw, err := xz.NewWriter(file)
 		if err != nil {
 			return fmt.Errorf("не удалось создать xz writer: %w", err)
 		}
-		defer xzw.Close()
+		defer func() {
+			if err := xzw.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "ошибка при закрытии xz writer: %v\n", err)
+			}
+		}()
 		writer = xzw
 	default:
 		return fmt.Errorf("неизвестный тип сжатия: %s", compression)
 	}
 	tw = tar.NewWriter(writer)
-	defer tw.Close()
+	defer func() {
+		if err := tw.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии tar writer: %v\n", err)
+		}
+	}()
 	for _, src := range sources {
 		err := addFileToTar(tw, src, "")
 		if err != nil {
@@ -121,13 +133,16 @@ func (a *Archiver) archiveTar(sources []string, destination string) error {
 		return fmt.Errorf("не удалось создать архив: %w", err)
 	}
 	defer func() {
-		err := file.Close()
-		if err != nil {
+		if err := file.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
 		}
 	}()
 	tw := tar.NewWriter(file)
-	defer tw.Close()
+	defer func() {
+		if err := tw.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии tar writer: %v\n", err)
+		}
+	}()
 	for _, src := range sources {
 		err := addFileToTar(tw, src, "")
 		if err != nil {
@@ -166,7 +181,11 @@ func addFileToTar(tw *tar.Writer, src, baseInTar string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
+		}
+	}()
 	hdr, err := tar.FileInfoHeader(info, "")
 	if err != nil {
 		return err
@@ -197,14 +216,14 @@ func (a *Archiver) ExtractArchive(source, destination string) error {
 	return fmt.Errorf("поддерживаются только zip, tar, tar.gz, tar.bz2, tar.xz")
 }
 
+// ExtractZip извлекает zip-архив в указанную директорию.
 func (a *Archiver) ExtractZip(source, destination string) error {
 	zipReader, err := zip.OpenReader(source)
 	if err != nil {
 		return fmt.Errorf("не удалось открыть архив: %w", err)
 	}
 	defer func() {
-		err := zipReader.Close()
-		if err != nil {
+		if err := zipReader.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "ошибка при закрытии zipReader: %v\n", err)
 		}
 	}()
@@ -258,7 +277,11 @@ func extractTarCompressed(source, destination, compression string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
+		}
+	}()
 	var tr *tar.Reader
 	switch compression {
 	case "gz":
@@ -266,7 +289,11 @@ func extractTarCompressed(source, destination, compression string) error {
 		if err != nil {
 			return err
 		}
-		defer gr.Close()
+		defer func() {
+			if err := gr.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "ошибка при закрытии gzip reader: %v\n", err)
+			}
+		}()
 		tr = tar.NewReader(gr)
 	case "bz2":
 		br := bzip2.NewReader(file)
@@ -341,7 +368,11 @@ func (a *Archiver) listZip(source string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("не удалось открыть архив: %w", err)
 	}
-	defer zipReader.Close()
+	defer func() {
+		if err := zipReader.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии zipReader: %v\n", err)
+		}
+	}()
 	var files []string
 	for _, f := range zipReader.File {
 		files = append(files, f.Name)
@@ -354,7 +385,11 @@ func listTarCompressed(source, compression string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
+		}
+	}()
 	var tr *tar.Reader
 	switch compression {
 	case "gz":
@@ -362,7 +397,11 @@ func listTarCompressed(source, compression string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer gr.Close()
+		defer func() {
+			if err := gr.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "ошибка при закрытии gzip reader: %v\n", err)
+			}
+		}()
 		tr = tar.NewReader(gr)
 	case "bz2":
 		br := bzip2.NewReader(file)
