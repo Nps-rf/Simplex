@@ -38,6 +38,6 @@ jobs:
           upload-release-assets: true
 
       - name: Container vulnerability scan (Trivy)
-        uses: aquasecurity/trivy-action@v0.20.0
+        uses: aquasecurity/trivy-action@v0.22.0
         with:
           image-ref: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
