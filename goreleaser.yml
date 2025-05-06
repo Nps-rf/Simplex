@@ -40,14 +40,3 @@ dockers:
     use:    buildx
     build_flag_templates:
       - --platform=linux/{{ .Arch }}
-
-signs:
-  - artifacts: checksum
-    cmd: cosign
-    args:
-      - sign-blob
-      - --key=cosign.key
-      - --output-signature=${signature}
-      - ${artifact}
-      - --yes
-
