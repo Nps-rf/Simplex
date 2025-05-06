@@ -2,7 +2,6 @@ package fileops
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -63,7 +62,7 @@ func (l *linuxSoftDeleter) MoveToTrash(path string) error {
 	// Создаём .trashinfo
 	trashInfo := fmt.Sprintf("[Trash Info]\nPath=%s\nDeletionDate=%s\n", path, time.Now().Format("2006-01-02T15:04:05"))
 	infoPath := filepath.Join(infoDir, fileName+".trashinfo")
-	if err := ioutil.WriteFile(infoPath, []byte(trashInfo), 0644); err != nil {
+	if err := os.WriteFile(infoPath, []byte(trashInfo), 0644); err != nil {
 		return fmt.Errorf("не удалось создать trashinfo: %w", err)
 	}
 	return nil
@@ -77,7 +76,7 @@ func (l *linuxSoftDeleter) RestoreFromTrash(fileName string) error {
 	trashDir := filepath.Join(home, ".local", "share", "Trash", "files")
 	infoDir := filepath.Join(home, ".local", "share", "Trash", "info")
 	infoPath := filepath.Join(infoDir, fileName+".trashinfo")
-	data, err := ioutil.ReadFile(infoPath)
+	data, err := os.ReadFile(infoPath)
 	if err != nil {
 		return fmt.Errorf("не удалось прочитать trashinfo: %w", err)
 	}
@@ -96,7 +95,9 @@ func (l *linuxSoftDeleter) RestoreFromTrash(fileName string) error {
 	if err := os.Rename(filePath, origPath); err != nil {
 		return fmt.Errorf("не удалось восстановить файл: %w", err)
 	}
-	os.Remove(infoPath)
+	if err := os.Remove(infoPath); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -107,8 +108,12 @@ func (l *linuxSoftDeleter) EmptyTrash() error {
 	}
 	trashDir := filepath.Join(home, ".local", "share", "Trash", "files")
 	infoDir := filepath.Join(home, ".local", "share", "Trash", "info")
-	_ = os.RemoveAll(trashDir)
-	_ = os.RemoveAll(infoDir)
+	if err := os.RemoveAll(trashDir); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(infoDir); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(trashDir, 0755); err != nil {
 		return err
 	}
@@ -177,7 +182,9 @@ func (m *macSoftDeleter) EmptyTrash() error {
 		return err
 	}
 	for _, entry := range entries {
-		os.RemoveAll(filepath.Join(trashDir, entry.Name()))
+		if err := os.RemoveAll(filepath.Join(trashDir, entry.Name())); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -241,7 +248,9 @@ func (w *windowsSoftDeleter) EmptyTrash() error {
 		return err
 	}
 	for _, entry := range entries {
-		os.RemoveAll(filepath.Join(trashDir, entry.Name()))
+		if err := os.RemoveAll(filepath.Join(trashDir, entry.Name())); err != nil {
+			return err
+		}
 	}
 	return nil
 }

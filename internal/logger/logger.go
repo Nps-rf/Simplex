@@ -101,7 +101,9 @@ func (l *Logger) Log(level LogLevel, operation, path, message string, err error)
 	}
 
 	// Сохраняем журнал на диск
-	l.SaveLog()
+	if err := l.SaveLog(); err != nil {
+		fmt.Fprintf(os.Stderr, "ошибка при сохранении журнала: %v\n", err)
+	}
 }
 
 // Debug логирует отладочное сообщение

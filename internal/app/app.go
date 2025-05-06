@@ -230,7 +230,10 @@ func (a *App) Start() {
 			continue
 		}
 
-		a.processCommand(input)
+		err := a.processCommand(input)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Ошибка выполнения команды: %v\n", err)
+		}
 	}
 
 	fmt.Println("Файловый менеджер завершил работу.")

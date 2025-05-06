@@ -84,7 +84,7 @@ func (d *Display) FormatFileInfo(fileInfo *FileInfo) string {
 
 	// Добавляем заголовок с подходящим цветом
 	if d.UseColors {
-		HeaderColor.Fprintf(&sb, "Информация о файле: %s\n", fileInfo.Name)
+		_, _ = HeaderColor.Fprintf(&sb, "Информация о файле: %s\n", fileInfo.Name)
 	} else {
 		sb.WriteString(fmt.Sprintf("Информация о файле: %s\n", fileInfo.Name))
 	}
@@ -151,7 +151,7 @@ func (d *Display) FormatSearchResults(results []string, query string) string {
 	var sb strings.Builder
 
 	if d.UseColors {
-		HeaderColor.Fprintf(&sb, "Результаты поиска для: %s\n", query)
+		_, _ = HeaderColor.Fprintf(&sb, "Результаты поиска для: %s\n", query)
 	} else {
 		sb.WriteString(fmt.Sprintf("Результаты поиска для: %s\n", query))
 	}
