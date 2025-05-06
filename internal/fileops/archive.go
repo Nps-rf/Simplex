@@ -33,9 +33,19 @@ func (a *Archiver) ArchiveFiles(sources []string, destination string, format str
 	if err != nil {
 		return fmt.Errorf("не удалось создать архив: %w", err)
 	}
-	defer zipFile.Close()
+	defer func() {
+		err := zipFile.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии zip-файла: %v\n", err)
+		}
+	}()
 	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
+	defer func() {
+		err := zipWriter.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии zipWriter: %v\n", err)
+		}
+	}()
 	for _, src := range sources {
 		err := addFileToZip(zipWriter, src, "")
 		if err != nil {
@@ -74,7 +84,12 @@ func addFileToZip(zipWriter *zip.Writer, src, baseInZip string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
+		}
+	}()
 	zipHeader, err := zip.FileInfoHeader(info)
 	if err != nil {
 		return err
@@ -103,7 +118,12 @@ func (a *Archiver) ExtractArchive(source, destination string) error {
 	if err != nil {
 		return fmt.Errorf("не удалось открыть архив: %w", err)
 	}
-	defer zipReader.Close()
+	defer func() {
+		err := zipReader.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии zipReader: %v\n", err)
+		}
+	}()
 	for _, f := range zipReader.File {
 		if strings.Contains(f.Name, "..") || filepath.IsAbs(f.Name) {
 			return fmt.Errorf("архив содержит небезопасный путь: %s", f.Name)
@@ -127,12 +147,21 @@ func (a *Archiver) ExtractArchive(source, destination string) error {
 		}
 		rc, err := f.Open()
 		if err != nil {
-			outFile.Close()
+			errClose := outFile.Close()
+			if errClose != nil {
+				fmt.Fprintf(os.Stderr, "ошибка при закрытии outFile: %v\n", errClose)
+			}
 			return err
 		}
 		_, err = io.Copy(outFile, rc)
-		outFile.Close()
-		rc.Close()
+		errClose1 := outFile.Close()
+		errClose2 := rc.Close()
+		if errClose1 != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии outFile: %v\n", errClose1)
+		}
+		if errClose2 != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии rc: %v\n", errClose2)
+		}
 		if err != nil {
 			return err
 		}
@@ -149,7 +178,6 @@ func (a *Archiver) ListArchiveContents(source string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("не удалось открыть архив: %w", err)
 	}
-	defer zipReader.Close()
 	var files []string
 	for _, f := range zipReader.File {
 		files = append(files, f.Name)
