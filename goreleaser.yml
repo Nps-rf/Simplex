@@ -40,10 +40,6 @@ dockers:
     build_flag_templates:
       - --platform=linux/{{ .Arch }}
 
-sboms:
-  - path: sbom.spdx
-    source: docker        # SBOM для контейнера
-
 signs:
   - artifacts: checksum
     cmd: cosign
