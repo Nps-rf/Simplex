@@ -8,7 +8,7 @@ before:
 
 builds:
   - id: default
-    main: ./cmd/simplex
+    main: ./cmd/filemanager/main.go
 
     targets:
       - linux_amd64
