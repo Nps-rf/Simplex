@@ -1,5 +1,4 @@
 version: 2
-
 project_name: simplex
 
 before:
@@ -9,16 +8,8 @@ before:
 builds:
   - id: default
     main: ./cmd/filemanager/main.go
-
-    targets:
-      - linux_amd64
-      - linux_arm64
-      - windows_amd64
-      - darwin_amd64
-      - darwin_arm64
-
-    flags:
-      - -trimpath
+    targets: [linux_amd64, linux_arm64, windows_amd64, darwin_amd64, darwin_arm64]
+    flags:   [ -trimpath ]
     ldflags:
       - -s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }} -X main.date={{ .Date }}
 
@@ -26,15 +17,15 @@ archives:
   - id: binaries
     format_overrides:
       - goos: windows
-        formats: [zip]    # для Windows лучше ZIP
+        formats: [zip]
 
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
 
 dockers:
   - image_templates:
-      - ghcr.io/{{ .Repo }}/{{ .ProjectName }}:{{ .Tag }}
-      - ghcr.io/{{ .Repo }}/{{ .ProjectName }}:latest
+      - ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:{{ .Tag }}
+      - ghcr.io/{{ .Env.GITHUB_REPOSITORY_OWNER }}/{{ .ProjectName }}:latest
     goos:   linux
     goarch: amd64
     use:    buildx
