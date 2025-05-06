@@ -8,11 +8,15 @@ import (
 )
 
 // FileOperator предоставляет функции для работы с файлами и директориями
-type FileOperator struct{}
+type FileOperator struct {
+	SoftDeleter SoftDeleter
+}
 
 // NewFileOperator создает новый экземпляр FileOperator
 func NewFileOperator() *FileOperator {
-	return &FileOperator{}
+	return &FileOperator{
+		SoftDeleter: GetSoftDeleter(),
+	}
 }
 
 // CreateFile создает новый файл
@@ -126,13 +130,9 @@ func (f *FileOperator) MoveFile(source, destination string) error {
 	return nil
 }
 
-// DeleteFile удаляет файл
+// DeleteFile удаляет файл (soft-delete)
 func (f *FileOperator) DeleteFile(path string) error {
-	err := os.Remove(path)
-	if err != nil {
-		return fmt.Errorf("не удалось удалить файл %s: %w", path, err)
-	}
-	return nil
+	return f.SoftDeleter.MoveToTrash(path)
 }
 
 // DeleteDirectory рекурсивно удаляет директорию

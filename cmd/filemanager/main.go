@@ -11,7 +11,10 @@ import (
 func main() {
 	fileManager, err := app.NewApp()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Ошибка при инициализации приложения: %v\n", err)
+		_, err := fmt.Fprintf(os.Stderr, "Ошибка при инициализации приложения: %v\n", err)
+		if err != nil {
+			return
+		}
 		os.Exit(1)
 	}
 

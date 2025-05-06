@@ -204,6 +204,79 @@ func TestApp(t *testing.T) {
 			t.Error("команда exit не остановила приложение")
 		}
 	})
+
+	// Тест на просмотр содержимого файла (cat)
+	t.Run("ViewFileCommand", func(t *testing.T) {
+		fileName := "view_test.txt"
+		filePath := filepath.Join(tempDir, fileName)
+		os.WriteFile(filePath, []byte("line1\nline2\nline3\n"), 0644)
+		app.cmdChangeDir([]string{tempDir})
+		// Корректный вызов
+		if err := app.cmdViewFile([]string{fileName}); err != nil {
+			t.Errorf("ошибка при просмотре файла: %v", err)
+		}
+		// Некорректные аргументы
+		if err := app.cmdViewFile([]string{}); err == nil {
+			t.Error("ожидалась ошибка при отсутствии аргументов")
+		}
+	})
+
+	// Тест на смену прав (chmod)
+	t.Run("ChangePermissionsCommand", func(t *testing.T) {
+		fileName := "perm_test.txt"
+		filePath := filepath.Join(tempDir, fileName)
+		os.WriteFile(filePath, []byte("test"), 0644)
+		app.cmdChangeDir([]string{tempDir})
+		if err := app.cmdChangePermissions([]string{"0644", fileName}); err != nil {
+			t.Errorf("ошибка при смене прав: %v", err)
+		}
+		if err := app.cmdChangePermissions([]string{"0644"}); err == nil {
+			t.Error("ожидалась ошибка при недостаточном количестве аргументов")
+		}
+	})
+
+	// Тест на архивирование и распаковку (archive, extract, list-archive)
+	t.Run("ArchiveCommands", func(t *testing.T) {
+		fileName := "arch_test.txt"
+		os.WriteFile(filepath.Join(tempDir, fileName), []byte("archive me"), 0644)
+		archiveName := "test.zip"
+		app.cmdChangeDir([]string{tempDir})
+		// Архивация
+		if err := app.cmdCreateArchive([]string{archiveName, "zip", fileName}); err != nil {
+			t.Errorf("ошибка при создании архива: %v", err)
+		}
+		// Просмотр содержимого архива
+		if err := app.cmdListArchive([]string{archiveName}); err != nil {
+			t.Errorf("ошибка при просмотре архива: %v", err)
+		}
+		// Распаковка
+		extractDir := "extract_dir"
+		os.Mkdir(filepath.Join(tempDir, extractDir), 0755)
+		if err := app.cmdExtractArchive([]string{archiveName, extractDir}); err != nil {
+			t.Errorf("ошибка при распаковке архива: %v", err)
+		}
+		// Ошибки аргументов
+		if err := app.cmdCreateArchive([]string{archiveName}); err == nil {
+			t.Error("ожидалась ошибка при недостаточном количестве аргументов для archive")
+		}
+		if err := app.cmdExtractArchive([]string{archiveName}); err == nil {
+			t.Error("ожидалась ошибка при недостаточном количестве аргументов для extract")
+		}
+		if err := app.cmdListArchive([]string{}); err == nil {
+			t.Error("ожидалась ошибка при отсутствии аргументов для list-archive")
+		}
+	})
+
+	// Тест на фильтрацию (filter)
+	t.Run("FilterCommand", func(t *testing.T) {
+		app.cmdChangeDir([]string{tempDir})
+		if err := app.cmdFilter([]string{"--ext=txt"}); err != nil {
+			t.Errorf("ошибка при применении фильтра: %v", err)
+		}
+		if err := app.cmdFilter([]string{}); err != nil {
+			t.Errorf("ошибка при сбросе фильтра: %v", err)
+		}
+	})
 }
 
 // captureOutput захватывает вывод в stdout во время выполнения функции

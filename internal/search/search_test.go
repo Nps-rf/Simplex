@@ -162,3 +162,59 @@ func TestInvalidRegex(t *testing.T) {
 		t.Error("SearchByRegex должен вернуть ошибку для некорректного регулярного выражения")
 	}
 }
+
+func TestSearchByName_ErrorHandling(t *testing.T) {
+	tempDir, cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	searcher := NewSearcher()
+
+	// Передаем несуществующую директорию
+	_, err := searcher.SearchByName(filepath.Join(tempDir, "not_exists"), "*.txt")
+	if err == nil {
+		t.Error("ожидалась ошибка при поиске в несуществующей директории")
+	}
+}
+
+func TestSearchByContent_BigFileAndPermission(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "search-bigfile")
+	if err != nil {
+		t.Fatalf("не удалось создать временную директорию: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	searcher := NewSearcher()
+
+	// Создаем большой файл (>10 МБ)
+	bigFile := filepath.Join(tempDir, "big.txt")
+	f, err := os.Create(bigFile)
+	if err != nil {
+		t.Fatalf("не удалось создать большой файл: %v", err)
+	}
+	f.Truncate(11 * 1024 * 1024) // 11 МБ
+	f.Close()
+
+	results, err := searcher.SearchByContent(tempDir, "что-то")
+	if err != nil {
+		t.Errorf("ошибка при поиске по содержимому: %v", err)
+	}
+	for _, r := range results {
+		if r == bigFile {
+			t.Error("большой файл не должен попадать в результаты поиска")
+		}
+	}
+
+	// Создаем файл без прав на чтение
+	noPermFile := filepath.Join(tempDir, "noperm.txt")
+	os.WriteFile(noPermFile, []byte("секрет"), 0000)
+	defer os.Chmod(noPermFile, 0644) // чтобы можно было удалить
+	results, err = searcher.SearchByContent(tempDir, "секрет")
+	if err != nil {
+		t.Errorf("ошибка при поиске по содержимому: %v", err)
+	}
+	for _, r := range results {
+		if r == noPermFile {
+			t.Error("файл без прав на чтение не должен попадать в результаты поиска")
+		}
+	}
+}

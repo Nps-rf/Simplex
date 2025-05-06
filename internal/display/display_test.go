@@ -221,3 +221,35 @@ func TestGetColorByFileType(t *testing.T) {
 		}
 	}
 }
+
+func TestIsDirectory(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "isdirectory_test")
+	if err != nil {
+		t.Fatalf("не удалось создать временную директорию: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	filePath := filepath.Join(tempDir, "file.txt")
+	os.WriteFile(filePath, []byte("test"), 0644)
+
+	isDir, err := isDirectory(tempDir)
+	if err != nil {
+		t.Errorf("ошибка при проверке директории: %v", err)
+	}
+	if !isDir {
+		t.Error("ожидалось, что путь будет директорией")
+	}
+
+	isDir, err = isDirectory(filePath)
+	if err != nil {
+		t.Errorf("ошибка при проверке файла: %v", err)
+	}
+	if isDir {
+		t.Error("ожидалось, что путь будет файлом, а не директорией")
+	}
+
+	_, err = isDirectory(filepath.Join(tempDir, "not_exists"))
+	if err == nil {
+		t.Error("ожидалась ошибка для несуществующего пути")
+	}
+}
