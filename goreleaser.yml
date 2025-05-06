@@ -26,7 +26,7 @@ archives:
   - id: binaries
     format_overrides:
       - goos: windows
-        format: zip   # для Windows лучше ZIP
+        formats: [zip]    # для Windows лучше ZIP
 
 checksum:
   name_template: "{{ .ProjectName }}_checksums.txt"
