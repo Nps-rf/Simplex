@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "Если вы используете Simplex, пожалуйста, цитируйте этот проект как указано ниже."
+title: "Simplex: Кроссплатформенный файловый менеджер на Go"
+authors:
+  - family-names: "nps-rf"
+    given-names: "Simplex Team"
+    orcid: "0000-0000-0000-0000"
+    affiliation: "nps-rf"
+version: "1.0.0"
+date-released: "2024-06-05"
+url: "https://github.com/nps-rf/simplex"
+repository-code: "https://github.com/nps-rf/simplex"
+license: "MIT" 

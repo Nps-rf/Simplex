@@ -2,12 +2,17 @@
 package fileops
 
 import (
+	"archive/tar"
 	"archive/zip"
+	"compress/bzip2"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/ulikunitz/xz"
 )
 
 // Archiver предоставляет функции для работы с архивами
@@ -18,7 +23,7 @@ func NewArchiver() *Archiver {
 	return &Archiver{}
 }
 
-// ArchiveFiles создает архив из указанных файлов и директорий (только zip)
+// ArchiveFiles создает архив из указанных файлов и директорий (zip, tar.gz, tar.bz2, tar.xz)
 func (a *Archiver) ArchiveFiles(sources []string, destination string, format string) error {
 	if format == "" {
 		format = filepath.Ext(destination)
@@ -26,9 +31,22 @@ func (a *Archiver) ArchiveFiles(sources []string, destination string, format str
 			format = format[1:]
 		}
 	}
-	if strings.ToLower(format) != "zip" {
-		return fmt.Errorf("поддерживается только zip-архивация (format=%s)", format)
+	format = strings.ToLower(format)
+	if format == "zip" {
+		return a.archiveZip(sources, destination)
+	} else if format == "tar.gz" || format == "tgz" {
+		return a.archiveTarCompressed(sources, destination, "gz")
+	} else if format == "tar.bz2" || format == "tbz2" {
+		return a.archiveTarCompressed(sources, destination, "bz2")
+	} else if format == "tar.xz" || format == "txz" {
+		return a.archiveTarCompressed(sources, destination, "xz")
+	} else if format == "tar" {
+		return a.archiveTar(sources, destination)
 	}
+	return fmt.Errorf("поддерживаются только zip, tar, tar.gz, tar.bz2, tar.xz")
+}
+
+func (a *Archiver) archiveZip(sources []string, destination string) error {
 	zipFile, err := os.Create(destination)
 	if err != nil {
 		return fmt.Errorf("не удалось создать архив: %w", err)
@@ -55,7 +73,71 @@ func (a *Archiver) ArchiveFiles(sources []string, destination string, format str
 	return nil
 }
 
-func addFileToZip(zipWriter *zip.Writer, src, baseInZip string) error {
+func (a *Archiver) archiveTarCompressed(sources []string, destination, compression string) error {
+	file, err := os.Create(destination)
+	if err != nil {
+		return fmt.Errorf("не удалось создать архив: %w", err)
+	}
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
+		}
+	}()
+	var tw *tar.Writer
+	var writer io.WriteCloser
+	switch compression {
+	case "gz":
+		gw := gzip.NewWriter(file)
+		defer gw.Close()
+		writer = gw
+	case "bz2":
+		// bzip2 нет для записи в stdlib, используем внешний пакет или не поддерживаем
+		return fmt.Errorf("создание tar.bz2 не поддерживается стандартной библиотекой Go")
+	case "xz":
+		xzw, err := xz.NewWriter(file)
+		if err != nil {
+			return fmt.Errorf("не удалось создать xz writer: %w", err)
+		}
+		defer xzw.Close()
+		writer = xzw
+	default:
+		return fmt.Errorf("неизвестный тип сжатия: %s", compression)
+	}
+	tw = tar.NewWriter(writer)
+	defer tw.Close()
+	for _, src := range sources {
+		err := addFileToTar(tw, src, "")
+		if err != nil {
+			return fmt.Errorf("ошибка при добавлении %s: %w", src, err)
+		}
+	}
+	return nil
+}
+
+func (a *Archiver) archiveTar(sources []string, destination string) error {
+	file, err := os.Create(destination)
+	if err != nil {
+		return fmt.Errorf("не удалось создать архив: %w", err)
+	}
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
+		}
+	}()
+	tw := tar.NewWriter(file)
+	defer tw.Close()
+	for _, src := range sources {
+		err := addFileToTar(tw, src, "")
+		if err != nil {
+			return fmt.Errorf("ошибка при добавлении %s: %w", src, err)
+		}
+	}
+	return nil
+}
+
+func addFileToTar(tw *tar.Writer, src, baseInTar string) error {
 	info, err := os.Stat(src)
 	if err != nil {
 		return err
@@ -68,12 +150,12 @@ func addFileToZip(zipWriter *zip.Writer, src, baseInZip string) error {
 		for _, entry := range entries {
 			entryPath := filepath.Join(src, entry.Name())
 			var entryBase string
-			if baseInZip == "" {
+			if baseInTar == "" {
 				entryBase = entry.Name()
 			} else {
-				entryBase = filepath.Join(baseInZip, entry.Name())
+				entryBase = filepath.Join(baseInTar, entry.Name())
 			}
-			err = addFileToZip(zipWriter, entryPath, entryBase)
+			err = addFileToTar(tw, entryPath, entryBase)
 			if err != nil {
 				return err
 			}
@@ -84,36 +166,38 @@ func addFileToZip(zipWriter *zip.Writer, src, baseInZip string) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		err := file.Close()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
-		}
-	}()
-	zipHeader, err := zip.FileInfoHeader(info)
+	defer file.Close()
+	hdr, err := tar.FileInfoHeader(info, "")
 	if err != nil {
 		return err
 	}
-	// baseInZip всегда относительный путь без ведущих слэшей
-	nameInZip := baseInZip
-	if nameInZip == "" {
-		nameInZip = filepath.Base(src)
-	}
-	zipHeader.Name = filepath.ToSlash(nameInZip)
-	zipHeader.Method = zip.Deflate
-	writer, err := zipWriter.CreateHeader(zipHeader)
+	hdr.Name = filepath.ToSlash(baseInTar)
+	err = tw.WriteHeader(hdr)
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(writer, file)
+	_, err = io.Copy(tw, file)
 	return err
 }
 
-// ExtractArchive безопасно распаковывает zip-архив (path traversal mitigation)
+// ExtractArchive поддерживает zip, tar.gz, tar.bz2, tar.xz
 func (a *Archiver) ExtractArchive(source, destination string) error {
-	if filepath.Ext(source) != ".zip" {
-		return fmt.Errorf("поддерживается только распаковка zip-архивов")
+	format := strings.ToLower(filepath.Ext(source))
+	if strings.HasSuffix(source, ".tar.gz") || strings.HasSuffix(source, ".tgz") {
+		return extractTarCompressed(source, destination, "gz")
+	} else if strings.HasSuffix(source, ".tar.bz2") || strings.HasSuffix(source, ".tbz2") {
+		return extractTarCompressed(source, destination, "bz2")
+	} else if strings.HasSuffix(source, ".tar.xz") || strings.HasSuffix(source, ".txz") {
+		return extractTarCompressed(source, destination, "xz")
+	} else if format == ".tar" {
+		return extractTarCompressed(source, destination, "none")
+	} else if format == ".zip" {
+		return a.ExtractZip(source, destination)
 	}
+	return fmt.Errorf("поддерживаются только zip, tar, tar.gz, tar.bz2, tar.xz")
+}
+
+func (a *Archiver) ExtractZip(source, destination string) error {
 	zipReader, err := zip.OpenReader(source)
 	if err != nil {
 		return fmt.Errorf("не удалось открыть архив: %w", err)
@@ -169,18 +253,195 @@ func (a *Archiver) ExtractArchive(source, destination string) error {
 	return nil
 }
 
-// ListArchiveContents выводит содержимое zip-архива
-func (a *Archiver) ListArchiveContents(source string) ([]string, error) {
-	if filepath.Ext(source) != ".zip" {
-		return nil, fmt.Errorf("поддерживается только просмотр zip-архивов")
+func extractTarCompressed(source, destination, compression string) error {
+	file, err := os.Open(source)
+	if err != nil {
+		return err
 	}
+	defer file.Close()
+	var tr *tar.Reader
+	switch compression {
+	case "gz":
+		gr, err := gzip.NewReader(file)
+		if err != nil {
+			return err
+		}
+		defer gr.Close()
+		tr = tar.NewReader(gr)
+	case "bz2":
+		br := bzip2.NewReader(file)
+		tr = tar.NewReader(br)
+	case "xz":
+		xzr, err := xz.NewReader(file)
+		if err != nil {
+			return err
+		}
+		tr = tar.NewReader(xzr)
+	case "none":
+		tr = tar.NewReader(file)
+	default:
+		return fmt.Errorf("неизвестный тип сжатия: %s", compression)
+	}
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		fpath := filepath.Join(destination, hdr.Name)
+		if !strings.HasPrefix(filepath.Clean(fpath)+string(os.PathSeparator), filepath.Clean(destination)+string(os.PathSeparator)) {
+			return fmt.Errorf("path traversal: %s", fpath)
+		}
+		if hdr.FileInfo().IsDir() {
+			if err := os.MkdirAll(fpath, hdr.FileInfo().Mode()); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
+			return err
+		}
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, hdr.FileInfo().Mode())
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(outFile, tr)
+		errClose := outFile.Close()
+		if errClose != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии outFile: %v\n", errClose)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ListArchiveContents поддерживает zip, tar.gz, tar.bz2, tar.xz
+func (a *Archiver) ListArchiveContents(source string) ([]string, error) {
+	format := strings.ToLower(filepath.Ext(source))
+	if strings.HasSuffix(source, ".tar.gz") || strings.HasSuffix(source, ".tgz") {
+		return listTarCompressed(source, "gz")
+	} else if strings.HasSuffix(source, ".tar.bz2") || strings.HasSuffix(source, ".tbz2") {
+		return listTarCompressed(source, "bz2")
+	} else if strings.HasSuffix(source, ".tar.xz") || strings.HasSuffix(source, ".txz") {
+		return listTarCompressed(source, "xz")
+	} else if format == ".tar" {
+		return listTarCompressed(source, "none")
+	} else if format == ".zip" {
+		return a.listZip(source)
+	}
+	return nil, fmt.Errorf("поддерживаются только zip, tar, tar.gz, tar.bz2, tar.xz")
+}
+
+func (a *Archiver) listZip(source string) ([]string, error) {
 	zipReader, err := zip.OpenReader(source)
 	if err != nil {
 		return nil, fmt.Errorf("не удалось открыть архив: %w", err)
 	}
+	defer zipReader.Close()
 	var files []string
 	for _, f := range zipReader.File {
 		files = append(files, f.Name)
 	}
 	return files, nil
+}
+
+func listTarCompressed(source, compression string) ([]string, error) {
+	file, err := os.Open(source)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	var tr *tar.Reader
+	switch compression {
+	case "gz":
+		gr, err := gzip.NewReader(file)
+		if err != nil {
+			return nil, err
+		}
+		defer gr.Close()
+		tr = tar.NewReader(gr)
+	case "bz2":
+		br := bzip2.NewReader(file)
+		tr = tar.NewReader(br)
+	case "xz":
+		xzr, err := xz.NewReader(file)
+		if err != nil {
+			return nil, err
+		}
+		tr = tar.NewReader(xzr)
+	case "none":
+		tr = tar.NewReader(file)
+	default:
+		return nil, fmt.Errorf("неизвестный тип сжатия: %s", compression)
+	}
+	var files []string
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		files = append(files, hdr.Name)
+	}
+	return files, nil
+}
+
+func addFileToZip(zipWriter *zip.Writer, src, baseInZip string) error {
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		entries, err := os.ReadDir(src)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			entryPath := filepath.Join(src, entry.Name())
+			var entryBase string
+			if baseInZip == "" {
+				entryBase = entry.Name()
+			} else {
+				entryBase = filepath.Join(baseInZip, entry.Name())
+			}
+			err = addFileToZip(zipWriter, entryPath, entryBase)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	file, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ошибка при закрытии файла: %v\n", err)
+		}
+	}()
+	zipHeader, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return err
+	}
+	// baseInZip всегда относительный путь без ведущих слэшей
+	nameInZip := baseInZip
+	if nameInZip == "" {
+		nameInZip = filepath.Base(src)
+	}
+	zipHeader.Name = filepath.ToSlash(nameInZip)
+	zipHeader.Method = zip.Deflate
+	writer, err := zipWriter.CreateHeader(zipHeader)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(writer, file)
+	return err
 }
