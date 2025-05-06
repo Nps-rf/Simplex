@@ -146,6 +146,26 @@ func TestLogger(t *testing.T) {
 	})
 }
 
+func TestNewLogger(t *testing.T) {
+	// Проверка успешного создания логгера
+	logger, err := NewLogger()
+	if err != nil {
+		t.Errorf("ошибка при создании логгера: %v", err)
+	}
+	if logger == nil {
+		t.Error("логгер не был создан")
+	}
+
+	// Проверка повторного создания (файл уже существует)
+	logger2, err2 := NewLogger()
+	if err2 != nil {
+		t.Errorf("ошибка при повторном создании логгера: %v", err2)
+	}
+	if logger2 == nil {
+		t.Error("логгер не был создан повторно")
+	}
+}
+
 // contains проверяет, содержит ли строка подстроку
 func contains(s, substr string) bool {
 	for i := 0; i < len(s)-len(substr)+1; i++ {

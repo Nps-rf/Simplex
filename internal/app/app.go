@@ -194,6 +194,21 @@ func (a *App) registerCommands() {
 			Description: "Включить/отключить цветной вывод",
 			Execute:     a.cmdToggleColors,
 		},
+		"empty-trash": {
+			Name:        "empty-trash",
+			Description: "Очистить корзину (удалить все файлы)",
+			Execute:     a.cmdEmptyTrash,
+		},
+		"trash-list": {
+			Name:        "trash-list",
+			Description: "Показать содержимое корзины",
+			Execute:     a.cmdTrashList,
+		},
+		"restore": {
+			Name:        "restore",
+			Description: "Восстановить файл из корзины (Linux)",
+			Execute:     a.cmdRestoreFromTrash,
+		},
 	}
 }
 
@@ -735,7 +750,7 @@ func (a *App) cmdViewLog(args []string) error {
 	return nil
 }
 
-func (a *App) cmdToggleColors(args []string) error {
+func (a *App) cmdToggleColors(_ []string) error {
 	a.display.ToggleColors()
 
 	if a.display.UseColors {
@@ -744,5 +759,42 @@ func (a *App) cmdToggleColors(args []string) error {
 		fmt.Println("Цветной вывод отключен")
 	}
 
+	return nil
+}
+
+func (a *App) cmdEmptyTrash(args []string) error {
+	err := a.fileOperator.SoftDeleter.EmptyTrash()
+	if err != nil {
+		return fmt.Errorf("ошибка при очистке корзины: %w", err)
+	}
+	fmt.Println("Корзина успешно очищена.")
+	return nil
+}
+
+func (a *App) cmdTrashList(args []string) error {
+	files, err := a.fileOperator.SoftDeleter.ListTrash()
+	if err != nil {
+		return fmt.Errorf("ошибка при получении содержимого корзины: %w", err)
+	}
+	if len(files) == 0 {
+		fmt.Println("Корзина пуста.")
+		return nil
+	}
+	fmt.Println("Содержимое корзины:")
+	for i, f := range files {
+		fmt.Printf("%d. %s\n", i+1, f)
+	}
+	return nil
+}
+
+func (a *App) cmdRestoreFromTrash(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("ожидается 1 аргумент — имя файла в корзине")
+	}
+	err := a.fileOperator.SoftDeleter.RestoreFromTrash(args[0])
+	if err != nil {
+		return fmt.Errorf("ошибка при восстановлении файла: %w", err)
+	}
+	fmt.Println("Файл успешно восстановлен.")
 	return nil
 }
