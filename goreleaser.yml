@@ -35,8 +35,6 @@ dockers:
     goos: linux
     goarch: [amd64, arm64]
     use: buildx
-    extra_files:
-      - LICENSE
     build_flag_templates:
       - --platform=linux/{{ .Arch }}
 
