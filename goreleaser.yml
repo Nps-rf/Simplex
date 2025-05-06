@@ -33,7 +33,7 @@ dockers:
       - ghcr.io/{{ .Repo }}/{{ .ProjectName }}:{{ .Tag }}
       - ghcr.io/{{ .Repo }}/{{ .ProjectName }}:latest
     goos: linux
-    goarch: [amd64, arm64]
+    goarch: amd64
     use: buildx
     build_flag_templates:
       - --platform=linux/{{ .Arch }}
