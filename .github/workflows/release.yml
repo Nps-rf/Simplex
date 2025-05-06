@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'     # запускается на теги v1.2.3
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write   # нужен для cosign / OIDC
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+          cache: true
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate & attach SBOM (Syft)
+        uses: anchore/sbom-action@v0
+        with:
+          upload-release-assets: true
+
+      - name: Container vulnerability scan (Trivy)
+        uses: aquasecurity/trivy-action@v0.20.0
+        with:
+          image-ref: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
