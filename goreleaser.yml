@@ -45,7 +45,9 @@ signs:
   - artifacts: checksum
     cmd: cosign
     args:
-      - sign
-      - --key
-      - cosign.key
-      - "{{ .ArtifactPath }}"
+      - sign-blob
+      - --key=cosign.key
+      - --output-signature=${signature}
+      - ${artifact}
+      - --yes
+
