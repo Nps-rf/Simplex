@@ -1,6 +1,8 @@
 package display
 
 import (
+	"file-manager/internal/i18n"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -104,7 +106,9 @@ func TestDisplay(t *testing.T) {
 			t.Errorf("отформатированная информация не содержит имя файла: %s", formatted)
 		}
 
-		if !strings.Contains(formatted, "Тип: Файл") {
+		// Используем шаблон из i18n для типа файла
+		typeStr := fmt.Sprintf(i18n.T("type")+": %s", i18n.T("file"))
+		if !strings.Contains(formatted, typeStr) {
 			t.Errorf("отформатированная информация не содержит тип файла: %s", formatted)
 		}
 	})
@@ -142,12 +146,14 @@ func TestDisplay(t *testing.T) {
 		// Форматируем результаты
 		formatted := display.FormatSearchResults(results, "test")
 
-		// Проверяем, что результат содержит ключевые фразы
-		if !strings.Contains(formatted, "Результаты поиска для") || !strings.Contains(formatted, "test") {
+		// Проверяем, что результат содержит ключевые фразы из i18n
+		searchResultsStr := fmt.Sprintf(i18n.T("search_results")+"\n", "test")
+		if !strings.Contains(formatted, searchResultsStr) {
 			t.Errorf("отформатированные результаты не содержат информацию о запросе: %s", formatted)
 		}
 
-		if !strings.Contains(formatted, "Найдено элементов: 2") {
+		foundItemsStr := fmt.Sprintf(i18n.T("found_items")+"\n\n", 2)
+		if !strings.Contains(formatted, foundItemsStr) {
 			t.Errorf("отформатированные результаты не содержат количество элементов: %s", formatted)
 		}
 	})
