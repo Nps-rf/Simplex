@@ -1,3 +1,7 @@
+## <small>0.1.5 (2025-05-10)</small>
+
+* fix(216d683aafe92f2952ef420663dfe7af10eecea6): incorrect display behaviour on tests ([f71355c](https://github.com/Nps-rf/Simplex/commit/f71355c))
+
 ## 0.1.4 (2025-05-10)
 
 * Merge pull request #3 from Nps-rf/feature/i18n-full-support ([f32e953](https://github.com/Nps-rf/Simplex/commit/f32e953)), closes [#3](https://github.com/Nps-rf/Simplex/issues/3)
