@@ -69,6 +69,11 @@ $ cd file-manager
 $ go run main.go
 ```
 
+##### Support 6 languages
+
+```
+["ru", "en", "es", "de", "fr", "zh"]
+```
 ---
 
 ## Примеры CLI-команд
