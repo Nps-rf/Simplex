@@ -3,6 +3,7 @@ package logger
 
 import (
 	"encoding/json"
+	"file-manager/internal/i18n"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -50,7 +51,7 @@ func NewLogger() (*Logger, error) {
 	// Определение пути к файлу журнала
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return nil, fmt.Errorf("не удалось получить домашнюю директорию: %w", err)
+		return nil, fmt.Errorf(i18n.T("log_home"), err)
 	}
 
 	configDir := filepath.Join(homeDir, ".filemanager")
@@ -59,7 +60,7 @@ func NewLogger() (*Logger, error) {
 	// Создаем директорию конфигурации, если она не существует
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(configDir, 0755); err != nil {
-			return nil, fmt.Errorf("не удалось создать директорию конфигурации: %w", err)
+			return nil, fmt.Errorf(i18n.T("log_dir"), err)
 		}
 	}
 
@@ -74,7 +75,7 @@ func NewLogger() (*Logger, error) {
 	if _, err := os.Stat(logFile); err == nil {
 		err = logger.LoadLog()
 		if err != nil {
-			return logger, fmt.Errorf("не удалось загрузить журнал: %w", err)
+			return logger, fmt.Errorf(i18n.T("log_load"), err)
 		}
 	}
 

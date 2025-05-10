@@ -13,6 +13,7 @@ import (
 	"errors"
 	"file-manager/internal/display"
 	"file-manager/internal/fileops"
+	"file-manager/internal/i18n"
 	"file-manager/internal/logger"
 	"file-manager/internal/navigation"
 	"file-manager/internal/search"
@@ -219,10 +220,15 @@ func (a *App) Start() {
 	a.isRunning = true
 	scanner := bufio.NewScanner(os.Stdin)
 
-	fmt.Println("Файловый менеджер запущен. Введите 'help' для просмотра доступных команд.")
+	fmt.Println(i18n.T("app_started"))
 
 	for a.isRunning {
-		fmt.Printf("\n%s> ", a.navigator.GetCurrentDirectory())
+		dir, err := a.navigator.GetCurrentDirectory()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, i18n.T("error")+"\n", err)
+			break
+		}
+		fmt.Printf("\n%s> ", dir)
 		if !scanner.Scan() {
 			break
 		}
@@ -232,13 +238,13 @@ func (a *App) Start() {
 			continue
 		}
 
-		err := a.processCommand(input)
+		err = a.processCommand(input)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Ошибка выполнения команды: %v\n", err)
+			fmt.Fprintf(os.Stderr, i18n.T("error")+"\n", err)
 		}
 	}
 
-	fmt.Println("Файловый менеджер завершил работу.")
+	fmt.Println(i18n.T("app_stopped"))
 }
 
 // ExecuteCommand выполняет одну команду и завершает работу
@@ -262,17 +268,22 @@ func (a *App) processCommand(input string) error {
 
 	cmd, exists := a.commands[cmdName]
 	if !exists {
-		errMsg := fmt.Sprintf("Неизвестная команда: %s. Введите 'help' для просмотра доступных команд.", cmdName)
+		errMsg := fmt.Sprintf(i18n.T("unknown_command"), cmdName)
 		fmt.Println(errMsg)
 		return errors.New(errMsg)
 	}
 
 	err := cmd.Execute(args)
+	dir, dirErr := a.navigator.GetCurrentDirectory()
 	if err != nil {
-		fmt.Printf("Ошибка: %s\n", err)
-		a.logger.Error(cmdName, a.navigator.GetCurrentDirectory(), fmt.Sprintf("Выполнение команды '%s' с аргументами %v", cmdName, args), err)
+		fmt.Printf(i18n.T("error")+"\n", err)
+		if dirErr == nil {
+			a.logger.Error(cmdName, dir, fmt.Sprintf("Выполнение команды '%s' с аргументами %v", cmdName, args), err)
+		}
 	} else {
-		a.logger.Info(cmdName, a.navigator.GetCurrentDirectory(), fmt.Sprintf("Успешное выполнение команды '%s' с аргументами %v", cmdName, args), nil)
+		if dirErr == nil {
+			a.logger.Info(cmdName, dir, fmt.Sprintf("Успешное выполнение команды '%s' с аргументами %v", cmdName, args), nil)
+		}
 	}
 
 	return err
@@ -281,32 +292,31 @@ func (a *App) processCommand(input string) error {
 // Команды файлового менеджера
 
 func (a *App) cmdHelp(_ []string) error {
-	fmt.Println("Доступные команды:")
+	fmt.Println(i18n.T("help"))
 
-	// Группируем команды по категориям
 	categories := map[string][]Command{
-		"Навигация":          {},
-		"Операции с файлами": {},
-		"Поиск и информация": {},
-		"Архивация":          {},
-		"Настройки":          {},
-		"Прочее":             {},
+		i18n.T("category_navigation"): {},
+		i18n.T("category_fileops"):    {},
+		i18n.T("category_search"):     {},
+		i18n.T("category_archive"):    {},
+		i18n.T("category_settings"):   {},
+		i18n.T("category_other"):      {},
 	}
 
 	for _, cmd := range a.commands {
 		switch cmd.Name {
 		case "ls", "cd", "pwd", "bookmark":
-			categories["Навигация"] = append(categories["Навигация"], cmd)
+			categories[i18n.T("category_navigation")] = append(categories[i18n.T("category_navigation")], cmd)
 		case "mkdir", "touch", "rm", "rmdir", "cp", "mv", "chmod":
-			categories["Операции с файлами"] = append(categories["Операции с файлами"], cmd)
+			categories[i18n.T("category_fileops")] = append(categories[i18n.T("category_fileops")], cmd)
 		case "find", "grep", "info", "cat":
-			categories["Поиск и информация"] = append(categories["Поиск и информация"], cmd)
+			categories[i18n.T("category_search")] = append(categories[i18n.T("category_search")], cmd)
 		case "archive", "extract", "list-archive":
-			categories["Архивация"] = append(categories["Архивация"], cmd)
+			categories[i18n.T("category_archive")] = append(categories[i18n.T("category_archive")], cmd)
 		case "filter", "colors", "log":
-			categories["Настройки"] = append(categories["Настройки"], cmd)
+			categories[i18n.T("category_settings")] = append(categories[i18n.T("category_settings")], cmd)
 		default:
-			categories["Прочее"] = append(categories["Прочее"], cmd)
+			categories[i18n.T("category_other")] = append(categories[i18n.T("category_other")], cmd)
 		}
 	}
 
@@ -314,7 +324,7 @@ func (a *App) cmdHelp(_ []string) error {
 		if len(cmds) > 0 {
 			fmt.Printf("\n%s:\n", category)
 			for _, cmd := range cmds {
-				fmt.Printf("  %-15s - %s\n", cmd.Name, cmd.Description)
+				fmt.Printf("  %-15s - %s\n", cmd.Name, i18n.T(cmd.Name))
 			}
 		}
 	}
@@ -330,18 +340,25 @@ func (a *App) cmdListDir(_ []string) error {
 
 	// Применяем фильтр, если он активен
 	if a.filterOptions != nil {
-		entries, err = navigation.Filter(entries, a.navigator.GetCurrentDirectory(), a.filterOptions)
+		dir, dirErr := a.navigator.GetCurrentDirectory()
+		if dirErr != nil {
+			return dirErr
+		}
+		entries, err = navigation.Filter(entries, dir, a.filterOptions)
 		if err != nil {
 			return fmt.Errorf("ошибка при применении фильтра: %w", err)
 		}
 	}
-
-	fmt.Printf("Содержимое директории: %s\n\n", a.navigator.GetCurrentDirectory())
+	dir, dirErr := a.navigator.GetCurrentDirectory()
+	if dirErr != nil {
+		return dirErr
+	}
+	fmt.Printf("Содержимое директории: %s\n\n", dir)
 	fmt.Println("ТИП  ИМЯ                           РАЗМЕР     ИЗМЕНЕН")
 	fmt.Println("---------------------------------------------------")
 
 	for _, entry := range entries {
-		formattedEntry, err := a.display.FormatDirEntry(entry, a.navigator.GetCurrentDirectory())
+		formattedEntry, err := a.display.FormatDirEntry(entry, dir)
 		if err != nil {
 			return err
 		}
@@ -359,7 +376,11 @@ func (a *App) cmdChangeDir(args []string) error {
 }
 
 func (a *App) cmdPrintWorkingDir(_ []string) error {
-	fmt.Println(a.navigator.GetCurrentDirectory())
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	fmt.Println(dir)
 	return nil
 }
 
@@ -367,8 +388,11 @@ func (a *App) cmdMakeDir(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
 	}
-
-	path := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, args[0])
 	return a.fileOperator.CreateDirectory(path)
 }
 
@@ -376,8 +400,11 @@ func (a *App) cmdCreateFile(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
 	}
-
-	path := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, args[0])
 	return a.fileOperator.CreateFile(path)
 }
 
@@ -385,8 +412,11 @@ func (a *App) cmdRemoveFile(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
 	}
-
-	path := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, args[0])
 	return a.fileOperator.DeleteFile(path)
 }
 
@@ -394,8 +424,11 @@ func (a *App) cmdRemoveDir(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
 	}
-
-	path := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, args[0])
 	return a.fileOperator.DeleteDirectory(path)
 }
 
@@ -403,11 +436,13 @@ func (a *App) cmdCopy(args []string) error {
 	if len(args) != 2 {
 		return fmt.Errorf("ожидается 2 аргумента, получено %d", len(args))
 	}
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	sourcePath := filepath.Join(dir, args[0])
+	destPath := filepath.Join(dir, args[1])
 
-	sourcePath := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
-	destPath := filepath.Join(a.navigator.GetCurrentDirectory(), args[1])
-
-	// Проверяем, является ли источник директорией
 	info, err := os.Stat(sourcePath)
 	if err != nil {
 		return err
@@ -424,9 +459,12 @@ func (a *App) cmdMove(args []string) error {
 	if len(args) != 2 {
 		return fmt.Errorf("ожидается 2 аргумента, получено %d", len(args))
 	}
-
-	sourcePath := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
-	destPath := filepath.Join(a.navigator.GetCurrentDirectory(), args[1])
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	sourcePath := filepath.Join(dir, args[0])
+	destPath := filepath.Join(dir, args[1])
 
 	return a.fileOperator.MoveFile(sourcePath, destPath)
 }
@@ -435,12 +473,14 @@ func (a *App) cmdFindByName(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
 	}
-
-	results, err := a.searcher.SearchByName(a.navigator.GetCurrentDirectory(), args[0])
+	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
 		return err
 	}
-
+	results, err := a.searcher.SearchByName(dir, args[0])
+	if err != nil {
+		return err
+	}
 	fmt.Println(a.display.FormatSearchResults(results, args[0]))
 	return nil
 }
@@ -449,12 +489,14 @@ func (a *App) cmdFindByContent(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
 	}
-
-	results, err := a.searcher.SearchByContent(a.navigator.GetCurrentDirectory(), args[0])
+	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
 		return err
 	}
-
+	results, err := a.searcher.SearchByContent(dir, args[0])
+	if err != nil {
+		return err
+	}
 	fmt.Println(a.display.FormatSearchResults(results, args[0]))
 	return nil
 }
@@ -463,13 +505,15 @@ func (a *App) cmdFileInfo(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
 	}
-
-	path := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, args[0])
 	fileInfo, err := a.display.GetFileInfo(path)
 	if err != nil {
 		return err
 	}
-
 	fmt.Println(a.display.FormatFileInfo(fileInfo))
 	return nil
 }
@@ -485,41 +529,34 @@ func (a *App) cmdViewFile(args []string) error {
 	if len(args) < 1 || len(args) > 3 {
 		return fmt.Errorf("ожидается от 1 до 3 аргументов, получено %d", len(args))
 	}
-
-	path := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
-
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, args[0])
 	startLine := 0
 	maxLines := 20
-
 	if len(args) >= 2 {
-		var err error
 		startLine, err = strconv.Atoi(args[1])
 		if err != nil {
 			return fmt.Errorf("некорректный номер начальной строки: %w", err)
 		}
 	}
-
 	if len(args) >= 3 {
-		var err error
 		maxLines, err = strconv.Atoi(args[2])
 		if err != nil {
 			return fmt.Errorf("некорректное количество строк: %w", err)
 		}
 	}
-
 	lines, err := a.fileViewer.ViewTextFile(path, startLine, maxLines)
 	if err != nil {
 		return err
 	}
-
 	fmt.Println(a.fileViewer.FormatTextContent(lines, startLine))
-
-	// Информация о файле
 	totalLines, err := a.fileViewer.GetTotalLines(path)
 	if err == nil {
 		fmt.Printf("\nПоказано строк: %d-%d из %d\n", startLine, startLine+len(lines)-1, totalLines)
 	}
-
 	return nil
 }
 
@@ -527,10 +564,12 @@ func (a *App) cmdChangePermissions(args []string) error {
 	if len(args) != 2 {
 		return fmt.Errorf("ожидается 2 аргумента, получено %d", len(args))
 	}
-
 	mode := args[0]
-	path := filepath.Join(a.navigator.GetCurrentDirectory(), args[1])
-
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, args[1])
 	return a.permissionsManager.ChangePermissions(path, mode)
 }
 
@@ -538,17 +577,17 @@ func (a *App) cmdCreateArchive(args []string) error {
 	if len(args) < 3 {
 		return fmt.Errorf("ожидается минимум 3 аргумента, получено %d", len(args))
 	}
-
 	archiveName := args[0]
 	format := args[1]
 	sources := []string{}
-
-	for _, src := range args[2:] {
-		sources = append(sources, filepath.Join(a.navigator.GetCurrentDirectory(), src))
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
 	}
-
-	destination := filepath.Join(a.navigator.GetCurrentDirectory(), archiveName)
-
+	for _, src := range args[2:] {
+		sources = append(sources, filepath.Join(dir, src))
+	}
+	destination := filepath.Join(dir, archiveName)
 	return a.archiver.ArchiveFiles(sources, destination, format)
 }
 
@@ -556,98 +595,90 @@ func (a *App) cmdExtractArchive(args []string) error {
 	if len(args) != 2 {
 		return fmt.Errorf("ожидается 2 аргумента, получено %d", len(args))
 	}
-
-	source := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
-	destination := filepath.Join(a.navigator.GetCurrentDirectory(), args[1])
-
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	source := filepath.Join(dir, args[0])
+	destination := filepath.Join(dir, args[1])
 	return a.archiver.ExtractArchive(source, destination)
 }
 
 func (a *App) cmdListArchive(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
+		return fmt.Errorf(i18n.T("error"), fmt.Sprintf(i18n.T("archive_args"), 1, len(args)))
 	}
-
-	source := filepath.Join(a.navigator.GetCurrentDirectory(), args[0])
-
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
+	source := filepath.Join(dir, args[0])
 	contents, err := a.archiver.ListArchiveContents(source)
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("Содержимое архива: %s\n\n", args[0])
+	fmt.Printf(i18n.T("archive_contents")+"\n\n", args[0])
 	for i, item := range contents {
 		fmt.Printf("%d. %s\n", i+1, item)
 	}
-
 	return nil
 }
 
 func (a *App) cmdManageBookmarks(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("ожидается минимум 1 аргумент")
+		return fmt.Errorf(i18n.T("error"), i18n.T("bookmark_args"))
 	}
-
+	dir, err := a.navigator.GetCurrentDirectory()
+	if err != nil {
+		return err
+	}
 	switch args[0] {
 	case "add":
 		if len(args) < 2 {
-			return fmt.Errorf("для добавления закладки необходимо указать имя")
+			return fmt.Errorf(i18n.T("error"), i18n.T("bookmark_add_args"))
 		}
-
 		name := args[1]
-		path := a.navigator.GetCurrentDirectory()
-
+		path := dir
 		if len(args) >= 3 {
 			path = args[2]
 			if !filepath.IsAbs(path) {
-				path = filepath.Join(a.navigator.GetCurrentDirectory(), path)
+				path = filepath.Join(dir, path)
 			}
 		}
-
 		return a.bookmarkManager.AddBookmark(name, path)
-
 	case "list":
 		bookmarks := a.bookmarkManager.ListBookmarks()
-		fmt.Println("Закладки:")
+		fmt.Println(i18n.T("bookmark_list"))
 		for i, bookmark := range bookmarks {
 			fmt.Printf("%d. %s -> %s\n", i+1, bookmark.Name, bookmark.Path)
 		}
 		return nil
-
 	case "remove":
 		if len(args) < 2 {
-			return fmt.Errorf("для удаления закладки необходимо указать имя")
+			return fmt.Errorf(i18n.T("error"), i18n.T("bookmark_remove_args"))
 		}
-
 		return a.bookmarkManager.RemoveBookmark(args[1])
-
 	case "go":
 		if len(args) < 2 {
-			return fmt.Errorf("для перехода необходимо указать имя закладки")
+			return fmt.Errorf(i18n.T("error"), i18n.T("bookmark_go_args"))
 		}
-
 		path, err := a.bookmarkManager.GetBookmarkPath(args[1])
 		if err != nil {
 			return err
 		}
-
 		return a.navigator.ChangeDirectory(path)
-
 	default:
-		return fmt.Errorf("неизвестная подкоманда: %s", args[0])
+		return fmt.Errorf(i18n.T("error"), fmt.Sprintf(i18n.T("bookmark_unknown"), args[0]))
 	}
 }
 
 func (a *App) cmdFilter(args []string) error {
-	// Сбрасываем фильтр, если нет аргументов
 	if len(args) == 0 {
 		a.filterOptions = navigation.NewFilterOptions()
-		fmt.Println("Фильтр сброшен")
+		fmt.Println(i18n.T("filter_reset"))
 		return nil
 	}
-
 	newOptions := navigation.NewFilterOptions()
-
 	for _, arg := range args {
 		if strings.HasPrefix(arg, "--ext=") {
 			ext := strings.TrimPrefix(arg, "--ext=")
@@ -726,11 +757,8 @@ func (a *App) cmdFilter(args []string) error {
 			}
 		}
 	}
-
 	a.filterOptions = newOptions
-	fmt.Println("Фильтр применен")
-
-	// Сразу показываем отфильтрованный список
+	fmt.Println(i18n.T("filter_applied"))
 	return a.cmdListDir([]string{})
 }
 
@@ -759,9 +787,9 @@ func (a *App) cmdToggleColors(_ []string) error {
 	a.display.ToggleColors()
 
 	if a.display.UseColors {
-		fmt.Println("Цветной вывод включен")
+		fmt.Println(i18n.T("colors_on"))
 	} else {
-		fmt.Println("Цветной вывод отключен")
+		fmt.Println(i18n.T("colors_off"))
 	}
 
 	return nil
@@ -770,22 +798,22 @@ func (a *App) cmdToggleColors(_ []string) error {
 func (a *App) cmdEmptyTrash(_ []string) error {
 	err := a.fileOperator.SoftDeleter.EmptyTrash()
 	if err != nil {
-		return fmt.Errorf("ошибка при очистке корзины: %w", err)
+		return fmt.Errorf(i18n.T("error"), err)
 	}
-	fmt.Println("Корзина успешно очищена.")
+	fmt.Println(i18n.T("trash_empty"))
 	return nil
 }
 
 func (a *App) cmdTrashList(_ []string) error {
 	files, err := a.fileOperator.SoftDeleter.ListTrash()
 	if err != nil {
-		return fmt.Errorf("ошибка при получении содержимого корзины: %w", err)
+		return fmt.Errorf(i18n.T("error"), err)
 	}
 	if len(files) == 0 {
-		fmt.Println("Корзина пуста.")
+		fmt.Println(i18n.T("trash_empty_already"))
 		return nil
 	}
-	fmt.Println("Содержимое корзины:")
+	fmt.Println(i18n.T("trash_contents"))
 	for i, f := range files {
 		fmt.Printf("%d. %s\n", i+1, f)
 	}
@@ -798,8 +826,8 @@ func (a *App) cmdRestoreFromTrash(args []string) error {
 	}
 	err := a.fileOperator.SoftDeleter.RestoreFromTrash(args[0])
 	if err != nil {
-		return fmt.Errorf("ошибка при восстановлении файла: %w", err)
+		return fmt.Errorf(i18n.T("error"), err)
 	}
-	fmt.Println("Файл успешно восстановлен.")
+	fmt.Println(i18n.T("file_restored"))
 	return nil
 }

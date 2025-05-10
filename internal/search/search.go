@@ -3,6 +3,7 @@ package search
 
 import (
 	"bufio"
+	"file-manager/internal/i18n"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -41,7 +42,7 @@ func (s *Searcher) SearchByName(root, pattern string) ([]string, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при поиске файлов: %w", err)
+		return nil, fmt.Errorf(i18n.T("search_files"), err)
 	}
 
 	return matches, nil
@@ -102,7 +103,7 @@ func (s *Searcher) SearchByContent(root, content string) ([]string, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при поиске по содержимому: %w", err)
+		return nil, fmt.Errorf(i18n.T("search_content"), err)
 	}
 
 	return matches, nil
@@ -116,7 +117,7 @@ func (s *Searcher) SearchByRegex(root, regexPattern string) ([]string, error) {
 	// Компилируем регулярное выражение
 	regex, err := regexp.Compile(regexPattern)
 	if err != nil {
-		return nil, fmt.Errorf("недопустимый шаблон регулярного выражения: %w", err)
+		return nil, fmt.Errorf(i18n.T("invalid_regex_pattern"), err)
 	}
 
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -169,7 +170,7 @@ func (s *Searcher) SearchByRegex(root, regexPattern string) ([]string, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("ошибка при поиске по регулярному выражению: %w", err)
+		return nil, fmt.Errorf(i18n.T("search_regex"), err)
 	}
 
 	return matches, nil
