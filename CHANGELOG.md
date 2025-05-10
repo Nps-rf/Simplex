@@ -1,4 +1,4 @@
-## 0.2.0 (2025-05-10)
+## 0.1.3 (2025-05-10)
 
 * Merge pull request #2 from Nps-rf/feature/i18n ([3ab91eb](https://github.com/Nps-rf/Simplex/commit/3ab91eb)), closes [#2](https://github.com/Nps-rf/Simplex/issues/2)
 * fix(cd40206821de31a81c463cfb9f60401a010b8017): remove invalid option for goreleaser.yml ([35a238e](https://github.com/Nps-rf/Simplex/commit/35a238e))
