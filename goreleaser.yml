@@ -10,8 +10,6 @@ builds:
     main: ./cmd/filemanager/main.go
     targets: [linux_amd64, linux_arm64, windows_amd64, darwin_amd64, darwin_arm64]
     flags:   [ -trimpath ]
-    changelog:
-      skip: true
     ldflags:
       - -s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }} -X main.date={{ .Date }}
 
