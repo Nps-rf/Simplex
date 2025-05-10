@@ -62,7 +62,7 @@ cmd/
 
 ```bash
 # Клонировать репозиторий
-$ git clone https://github.com/yourusername/file-manager.git
+$ git clone https://github.com/nps-rf/file-manager.git
 $ cd file-manager
 
 # Запустить приложение

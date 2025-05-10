@@ -370,7 +370,7 @@ func (a *App) cmdListDir(_ []string) error {
 
 func (a *App) cmdChangeDir(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_1"), len(args))
 	}
 	return a.navigator.ChangeDirectory(args[0])
 }
@@ -386,7 +386,7 @@ func (a *App) cmdPrintWorkingDir(_ []string) error {
 
 func (a *App) cmdMakeDir(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_1"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -398,7 +398,7 @@ func (a *App) cmdMakeDir(args []string) error {
 
 func (a *App) cmdCreateFile(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_1"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -410,7 +410,7 @@ func (a *App) cmdCreateFile(args []string) error {
 
 func (a *App) cmdRemoveFile(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_1"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -422,7 +422,7 @@ func (a *App) cmdRemoveFile(args []string) error {
 
 func (a *App) cmdRemoveDir(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_1"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -434,7 +434,7 @@ func (a *App) cmdRemoveDir(args []string) error {
 
 func (a *App) cmdCopy(args []string) error {
 	if len(args) != 2 {
-		return fmt.Errorf("ожидается 2 аргумента, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_2"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -457,7 +457,7 @@ func (a *App) cmdCopy(args []string) error {
 
 func (a *App) cmdMove(args []string) error {
 	if len(args) != 2 {
-		return fmt.Errorf("ожидается 2 аргумента, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_2"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -471,7 +471,7 @@ func (a *App) cmdMove(args []string) error {
 
 func (a *App) cmdFindByName(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_1"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -487,7 +487,7 @@ func (a *App) cmdFindByName(args []string) error {
 
 func (a *App) cmdFindByContent(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_1"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -503,7 +503,7 @@ func (a *App) cmdFindByContent(args []string) error {
 
 func (a *App) cmdFileInfo(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_1"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -527,7 +527,7 @@ func (a *App) cmdExit(_ []string) error {
 
 func (a *App) cmdViewFile(args []string) error {
 	if len(args) < 1 || len(args) > 3 {
-		return fmt.Errorf("ожидается от 1 до 3 аргументов, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_1_to_3"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -562,7 +562,7 @@ func (a *App) cmdViewFile(args []string) error {
 
 func (a *App) cmdChangePermissions(args []string) error {
 	if len(args) != 2 {
-		return fmt.Errorf("ожидается 2 аргумента, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_2"), len(args))
 	}
 	mode := args[0]
 	dir, err := a.navigator.GetCurrentDirectory()
@@ -575,7 +575,7 @@ func (a *App) cmdChangePermissions(args []string) error {
 
 func (a *App) cmdCreateArchive(args []string) error {
 	if len(args) < 3 {
-		return fmt.Errorf("ожидается минимум 3 аргумента, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_min_3"), len(args))
 	}
 	archiveName := args[0]
 	format := args[1]
@@ -593,7 +593,7 @@ func (a *App) cmdCreateArchive(args []string) error {
 
 func (a *App) cmdExtractArchive(args []string) error {
 	if len(args) != 2 {
-		return fmt.Errorf("ожидается 2 аргумента, получено %d", len(args))
+		return fmt.Errorf(i18n.T("args_expected_2"), len(args))
 	}
 	dir, err := a.navigator.GetCurrentDirectory()
 	if err != nil {
@@ -822,7 +822,7 @@ func (a *App) cmdTrashList(_ []string) error {
 
 func (a *App) cmdRestoreFromTrash(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("ожидается 1 аргумент — имя файла в корзине")
+		return fmt.Errorf(i18n.T("args_expected_1"), len(args))
 	}
 	err := a.fileOperator.SoftDeleter.RestoreFromTrash(args[0])
 	if err != nil {

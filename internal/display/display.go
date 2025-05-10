@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"file-manager/internal/i18n"
+
 	"gopkg.in/djherbis/times.v1"
 )
 
@@ -39,7 +41,7 @@ func NewDisplay() *Display {
 func (d *Display) GetFileInfo(path string) (*FileInfo, error) {
 	info, err := os.Stat(path)
 	if err != nil {
-		return nil, fmt.Errorf("не удалось получить информацию о %s: %w", path, err)
+		return nil, fmt.Errorf(i18n.T("display_stat_error"), path, err)
 	}
 
 	// Проверяем, является ли файл исполняемым
@@ -76,33 +78,30 @@ func (d *Display) GetFileInfo(path string) (*FileInfo, error) {
 func (d *Display) FormatFileInfo(fileInfo *FileInfo) string {
 	var sb strings.Builder
 
-	// Определяем тип файла
-	fileType := "Файл"
+	fileType := i18n.T("file")
 	if fileInfo.IsDir {
-		fileType = "Директория"
+		fileType = i18n.T("directory")
 	}
 
-	// Добавляем заголовок с подходящим цветом
 	if d.UseColors {
-		_, _ = HeaderColor.Fprintf(&sb, "Информация о файле: %s\n", fileInfo.Name)
+		_, _ = HeaderColor.Fprintf(&sb, i18n.T("file_info")+"\n", fileInfo.Name)
 	} else {
-		sb.WriteString(fmt.Sprintf("Информация о файле: %s\n", fileInfo.Name))
+		sb.WriteString(fmt.Sprintf(i18n.T("file_info")+"\n", fileInfo.Name))
 	}
 
-	sb.WriteString(fmt.Sprintf("Путь: %s\n", fileInfo.Path))
-	sb.WriteString(fmt.Sprintf("Тип: %s\n", fileType))
+	sb.WriteString(fmt.Sprintf(i18n.T("path")+": %s\n", fileInfo.Path))
+	sb.WriteString(fmt.Sprintf(i18n.T("type")+": %s\n", fileType))
 
-	// Размер (только для файлов)
 	if !fileInfo.IsDir {
-		sb.WriteString(fmt.Sprintf("Размер: %s\n", formatSize(fileInfo.Size)))
+		sb.WriteString(fmt.Sprintf(i18n.T("size")+"\n", formatSize(fileInfo.Size)))
 	}
 
-	sb.WriteString(fmt.Sprintf("Разрешения: %s\n", fileInfo.Mode.String()))
-	sb.WriteString(fmt.Sprintf("Последнее изменение: %s\n", fileInfo.LastModified.Format("02.01.2006 15:04:05")))
-	sb.WriteString(fmt.Sprintf("Дата создания: %s\n", fileInfo.CreatedAt.Format("02.01.2006 15:04:05")))
+	sb.WriteString(fmt.Sprintf(i18n.T("permissions")+"\n", fileInfo.Mode.String()))
+	sb.WriteString(fmt.Sprintf(i18n.T("last_modified")+"\n", fileInfo.LastModified.Format("02.01.2006 15:04:05")))
+	sb.WriteString(fmt.Sprintf(i18n.T("created_at")+"\n", fileInfo.CreatedAt.Format("02.01.2006 15:04:05")))
 
 	if fileInfo.IsExecutable {
-		sb.WriteString("Исполняемый: Да\n")
+		sb.WriteString(i18n.T("executable") + "\n")
 	}
 
 	return sb.String()
@@ -114,14 +113,14 @@ func (d *Display) FormatDirEntry(entry os.DirEntry, basePath string) (string, er
 
 	info, err := entry.Info()
 	if err != nil {
-		return "", fmt.Errorf("не удалось получить информацию о %s: %w", fullPath, err)
+		return "", fmt.Errorf(i18n.T("display_stat_error"), fullPath, err)
 	}
 
 	var prefix string
 	if entry.IsDir() {
-		prefix = "DIR  "
+		prefix = i18n.T("dir_prefix")
 	} else {
-		prefix = "FILE "
+		prefix = i18n.T("file_prefix")
 	}
 
 	size := ""
@@ -137,7 +136,6 @@ func (d *Display) FormatDirEntry(entry os.DirEntry, basePath string) (string, er
 		size,
 		info.ModTime().Format("02.01.2006 15:04:05"))
 
-	// Применяем цвета если они включены
 	if d.UseColors {
 		color := GetColorByFileType(entry.Name(), entry.IsDir(), isExec)
 		return color.Sprint(result), nil
@@ -151,12 +149,12 @@ func (d *Display) FormatSearchResults(results []string, query string) string {
 	var sb strings.Builder
 
 	if d.UseColors {
-		_, _ = HeaderColor.Fprintf(&sb, "Результаты поиска для: %s\n", query)
+		_, _ = HeaderColor.Fprintf(&sb, i18n.T("search_results")+"\n", query)
 	} else {
-		sb.WriteString(fmt.Sprintf("Результаты поиска для: %s\n", query))
+		sb.WriteString(fmt.Sprintf(i18n.T("search_results")+"\n", query))
 	}
 
-	sb.WriteString(fmt.Sprintf("Найдено элементов: %d\n\n", len(results)))
+	sb.WriteString(fmt.Sprintf(i18n.T("found_items")+"\n\n", len(results)))
 
 	for i, result := range results {
 		if d.UseColors {
