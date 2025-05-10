@@ -1,6 +1,7 @@
 package navigation
 
 import (
+	"file-manager/internal/i18n"
 	"os"
 	"path/filepath"
 	"strings"
@@ -8,12 +9,17 @@ import (
 )
 
 func TestNavigator(t *testing.T) {
+	err := i18n.LoadLocale("ru")
+	if err != nil {
+		t.Fatalf("не удалось загрузить локаль: %v", err)
+	}
 	// Создаем временную директорию для тестов
 	tempDir, err := os.MkdirTemp("", "navigation_test")
 	if err != nil {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
 	defer func() {
+		_ = os.Chdir(os.TempDir())
 		err := os.RemoveAll(tempDir)
 		if err != nil {
 			t.Errorf("ошибка при удалении временной директории: %v", err)
@@ -34,7 +40,10 @@ func TestNavigator(t *testing.T) {
 
 	// Тест на получение текущей директории
 	t.Run("GetCurrentDirectory", func(t *testing.T) {
-		dir := navigator.GetCurrentDirectory()
+		dir, err := navigator.GetCurrentDirectory()
+		if err != nil {
+			t.Errorf("не удалось получить текущую директорию: %v", err)
+		}
 		if dir == "" {
 			t.Error("текущая директория не должна быть пустой")
 		}
@@ -47,7 +56,10 @@ func TestNavigator(t *testing.T) {
 			t.Errorf("не удалось изменить директорию на %s: %v", tempDir, err)
 		}
 
-		currentDir := navigator.GetCurrentDirectory()
+		currentDir, err := navigator.GetCurrentDirectory()
+		if err != nil {
+			t.Errorf("не удалось получить текущую директорию: %v", err)
+		}
 		if currentDir != tempDir {
 			t.Errorf("текущая директория (%s) не соответствует ожидаемой (%s)", currentDir, tempDir)
 		}
@@ -67,7 +79,10 @@ func TestNavigator(t *testing.T) {
 			t.Errorf("не удалось изменить директорию на nested: %v", err)
 		}
 
-		currentDir := navigator.GetCurrentDirectory()
+		currentDir, err := navigator.GetCurrentDirectory()
+		if err != nil {
+			t.Errorf("не удалось получить текущую директорию: %v", err)
+		}
 		if currentDir != nestedDir {
 			t.Errorf("текущая директория (%s) не соответствует ожидаемой (%s)", currentDir, nestedDir)
 		}
@@ -87,7 +102,10 @@ func TestNavigator(t *testing.T) {
 			t.Errorf("не удалось изменить директорию на родительскую: %v", err)
 		}
 
-		currentDir := navigator.GetCurrentDirectory()
+		currentDir, err := navigator.GetCurrentDirectory()
+		if err != nil {
+			t.Errorf("не удалось получить текущую директорию: %v", err)
+		}
 		if currentDir != tempDir {
 			t.Errorf("текущая директория (%s) не соответствует ожидаемой (%s)", currentDir, tempDir)
 		}
@@ -157,6 +175,7 @@ func TestBookmarkManager(t *testing.T) {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
 	defer func() {
+		_ = os.Chdir(os.TempDir())
 		err := os.RemoveAll(tempDir)
 		if err != nil {
 			t.Errorf("ошибка при удалении временной директории: %v", err)
@@ -286,6 +305,7 @@ func TestFilter(t *testing.T) {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
 	defer func() {
+		_ = os.Chdir(os.TempDir())
 		err := os.RemoveAll(tempDir)
 		if err != nil {
 			t.Errorf("ошибка при удалении временной директории: %v", err)

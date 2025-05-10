@@ -257,6 +257,7 @@ func TestLsCommand(t *testing.T) {
 		t.Fatalf("не удалось создать временную директорию: %v", err)
 	}
 	defer func() {
+		_ = os.Chdir(os.TempDir())
 		err := os.RemoveAll(tempDir)
 		if err != nil {
 			t.Errorf("ошибка при удалении временной директории: %v", err)

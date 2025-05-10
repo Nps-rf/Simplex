@@ -3,6 +3,7 @@ package navigation
 
 import (
 	"encoding/json"
+	"file-manager/internal/i18n"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,7 +26,7 @@ func NewBookmarkManager() (*BookmarkManager, error) {
 	// Определение пути к файлу закладок
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return nil, fmt.Errorf("не удалось получить домашнюю директорию: %w", err)
+		return nil, fmt.Errorf(i18n.T("bm_home"), err)
 	}
 
 	configDir := filepath.Join(homeDir, ".filemanager")
@@ -39,7 +40,7 @@ func NewBookmarkManager() (*BookmarkManager, error) {
 	// Создаем директорию конфигурации, если она не существует
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(configDir, 0755); err != nil {
-			return nil, fmt.Errorf("не удалось создать директорию конфигурации: %w", err)
+			return nil, fmt.Errorf(i18n.T("bm_dir"), err)
 		}
 	}
 
@@ -47,7 +48,7 @@ func NewBookmarkManager() (*BookmarkManager, error) {
 	if _, err := os.Stat(bookmarksFile); err == nil {
 		err = manager.LoadBookmarks()
 		if err != nil {
-			return nil, fmt.Errorf("не удалось загрузить закладки: %w", err)
+			return nil, fmt.Errorf(i18n.T("bm_load"), err)
 		}
 	}
 
@@ -59,17 +60,17 @@ func (bm *BookmarkManager) AddBookmark(name, path string) error {
 	// Проверяем, существует ли директория
 	info, err := os.Stat(path)
 	if err != nil {
-		return fmt.Errorf("путь не существует: %w", err)
+		return fmt.Errorf(i18n.T("bm_path"), err)
 	}
 
 	if !info.IsDir() {
-		return fmt.Errorf("путь не является директорией: %s", path)
+		return fmt.Errorf(i18n.T("bm_dir_not"), path)
 	}
 
 	// Проверяем уникальность имени
 	for _, bookmark := range bm.Bookmarks {
 		if bookmark.Name == name {
-			return fmt.Errorf("закладка с именем '%s' уже существует", name)
+			return fmt.Errorf(i18n.T("bm_exists"), name)
 		}
 	}
 
@@ -97,7 +98,7 @@ func (bm *BookmarkManager) RemoveBookmark(name string) error {
 	}
 
 	if !found {
-		return fmt.Errorf("закладка с именем '%s' не найдена", name)
+		return fmt.Errorf(i18n.T("bm_not_found"), name)
 	}
 
 	bm.Bookmarks = newBookmarks
@@ -112,7 +113,7 @@ func (bm *BookmarkManager) GetBookmarkPath(name string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("закладка с именем '%s' не найдена", name)
+	return "", fmt.Errorf(i18n.T("bm_not_found"), name)
 }
 
 // ListBookmarks возвращает список всех закладок
@@ -125,13 +126,13 @@ func (bm *BookmarkManager) SaveBookmarks() error {
 	// Сериализуем закладки в JSON
 	data, err := json.MarshalIndent(bm.Bookmarks, "", "  ")
 	if err != nil {
-		return fmt.Errorf("не удалось сериализовать закладки: %w", err)
+		return fmt.Errorf(i18n.T("bm_marshal"), err)
 	}
 
 	// Записываем данные в файл
 	err = os.WriteFile(bm.BookmarksFile, data, 0644)
 	if err != nil {
-		return fmt.Errorf("не удалось записать закладки в файл: %w", err)
+		return fmt.Errorf(i18n.T("bm_write"), err)
 	}
 
 	return nil
@@ -147,14 +148,14 @@ func (bm *BookmarkManager) LoadBookmarks() error {
 	// Читаем данные из файла
 	data, err := os.ReadFile(bm.BookmarksFile)
 	if err != nil {
-		return fmt.Errorf("не удалось прочитать файл закладок: %w", err)
+		return fmt.Errorf(i18n.T("bm_read"), err)
 	}
 
 	// Десериализуем JSON
 	if len(data) > 0 {
 		err = json.Unmarshal(data, &bm.Bookmarks)
 		if err != nil {
-			return fmt.Errorf("не удалось десериализовать закладки: %w", err)
+			return fmt.Errorf(i18n.T("bm_unmarshal"), err)
 		}
 	}
 

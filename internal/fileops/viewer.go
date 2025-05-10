@@ -2,6 +2,7 @@ package fileops
 
 import (
 	"bufio"
+	"file-manager/internal/i18n"
 	"fmt"
 	"io"
 	"os"
@@ -25,7 +26,7 @@ func (v *FileViewer) ViewTextFile(path string, startLine, maxLines int) ([]strin
 	// Открываем файл для чтения
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("не удалось открыть файл %s: %w", path, err)
+		return nil, fmt.Errorf(i18n.T("viewer_open"), path, err)
 	}
 	defer func() {
 		if err := file.Close(); err != nil {

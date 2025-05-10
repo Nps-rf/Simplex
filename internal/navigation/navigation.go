@@ -1,10 +1,10 @@
 package navigation
 
 import (
+	"file-manager/internal/i18n"
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"sort"
 )
 
@@ -28,7 +28,7 @@ func NewNavigator() (*Navigator, error) {
 func (n *Navigator) ListDirectory() ([]fs.DirEntry, error) {
 	entries, err := os.ReadDir(n.CurrentDir)
 	if err != nil {
-		return nil, fmt.Errorf("не удалось прочитать директорию %s: %w", n.CurrentDir, err)
+		return nil, fmt.Errorf(i18n.T("nav_readdir"), n.CurrentDir, err)
 	}
 
 	// Сортировка: сначала директории, затем файлы
@@ -46,38 +46,27 @@ func (n *Navigator) ListDirectory() ([]fs.DirEntry, error) {
 }
 
 // ChangeDirectory изменяет текущую директорию
-func (n *Navigator) ChangeDirectory(path string) error {
-	// Обработка специальных случаев
-	if path == ".." {
-		// Переход на уровень выше
-		parent := filepath.Dir(n.CurrentDir)
-		n.CurrentDir = parent
-		return nil
-	}
-
-	// Проверяем, является ли путь абсолютным или относительным
-	var targetPath string
-	if filepath.IsAbs(path) {
-		targetPath = path
-	} else {
-		targetPath = filepath.Join(n.CurrentDir, path)
-	}
-
-	// Проверяем, существует ли директория
+func (n *Navigator) ChangeDirectory(targetPath string) error {
 	info, err := os.Stat(targetPath)
 	if err != nil {
-		return fmt.Errorf("не удалось получить информацию о пути %s: %w", targetPath, err)
+		return fmt.Errorf(i18n.T("nav_stat"), targetPath, err)
 	}
-
 	if !info.IsDir() {
-		return fmt.Errorf("%s не является директорией", targetPath)
+		return fmt.Errorf(i18n.T("nav_notdir"), targetPath)
 	}
-
+	err = os.Chdir(targetPath)
+	if err != nil {
+		return fmt.Errorf(i18n.T("nav_chdir"), targetPath, err)
+	}
 	n.CurrentDir = targetPath
 	return nil
 }
 
 // GetCurrentDirectory возвращает текущую директорию
-func (n *Navigator) GetCurrentDirectory() string {
-	return n.CurrentDir
+func (n *Navigator) GetCurrentDirectory() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf(i18n.T("nav_getwd"), err)
+	}
+	return dir, nil
 }

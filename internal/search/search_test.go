@@ -1,8 +1,10 @@
 package search
 
 import (
+	"file-manager/internal/i18n"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -51,6 +53,10 @@ func setupTestEnvironment(t *testing.T) (string, func()) {
 }
 
 func TestSearchByName(t *testing.T) {
+	err := i18n.LoadLocale("ru")
+	if err != nil {
+		t.Fatalf("не удалось загрузить локаль: %v", err)
+	}
 	tempDir, cleanup := setupTestEnvironment(t)
 	defer cleanup()
 
@@ -180,16 +186,11 @@ func TestSearchByName_ErrorHandling(t *testing.T) {
 }
 
 func TestSearchByContent_BigFileAndPermission(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "search-bigfile")
-	if err != nil {
-		t.Fatalf("не удалось создать временную директорию: %v", err)
+	if runtime.GOOS == "windows" {
+		t.Skip("Тест на права доступа не поддерживается на Windows")
 	}
-	defer func() {
-		err := os.RemoveAll(tempDir)
-		if err != nil {
-			t.Errorf("ошибка при удалении временной директории: %v", err)
-		}
-	}()
+	tempDir, cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	searcher := NewSearcher()
 
