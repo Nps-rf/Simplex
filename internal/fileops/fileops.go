@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"file-manager/internal/i18n"
 )
 
 // FileOperator предоставляет функции для работы с файлами и директориями
@@ -23,11 +25,11 @@ func NewFileOperator() *FileOperator {
 func (f *FileOperator) CreateFile(path string) error {
 	file, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("не удалось создать файл %s: %w", path, err)
+		return fmt.Errorf(i18n.T("fileops_create_file_error"), path, err)
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			panic(fmt.Errorf("ошибка при закрытии файла %s: %w", path, err))
+			panic(fmt.Errorf(i18n.T("fileops_close_file_error"), path, err))
 		}
 	}()
 	return nil
@@ -37,7 +39,7 @@ func (f *FileOperator) CreateFile(path string) error {
 func (f *FileOperator) CreateDirectory(path string) error {
 	err := os.MkdirAll(path, 0755)
 	if err != nil {
-		return fmt.Errorf("не удалось создать директорию %s: %w", path, err)
+		return fmt.Errorf(i18n.T("fileops_create_dir_error"), path, err)
 	}
 	return nil
 }
@@ -47,41 +49,41 @@ func (f *FileOperator) CopyFile(source, destination string) error {
 	// Открываем исходный файл
 	src, err := os.Open(source)
 	if err != nil {
-		return fmt.Errorf("не удалось открыть исходный файл %s: %w", source, err)
+		return fmt.Errorf(i18n.T("fileops_open_source_error"), source, err)
 	}
 	defer func() {
 		if err := src.Close(); err != nil {
-			panic(fmt.Errorf("ошибка при закрытии исходного файла %s: %w", source, err))
+			panic(fmt.Errorf(i18n.T("fileops_close_source_error"), source, err))
 		}
 	}()
 
 	// Создаем файл назначения
 	dst, err := os.Create(destination)
 	if err != nil {
-		return fmt.Errorf("не удалось создать файл назначения %s: %w", destination, err)
+		return fmt.Errorf(i18n.T("fileops_create_dest_error"), destination, err)
 	}
 	defer func() {
 		if err := dst.Close(); err != nil {
-			panic(fmt.Errorf("ошибка при закрытии файла назначения %s: %w", destination, err))
+			panic(fmt.Errorf(i18n.T("fileops_close_dest_error"), destination, err))
 		}
 	}()
 
 	// Копируем содержимое
 	_, err = io.Copy(dst, src)
 	if err != nil {
-		return fmt.Errorf("не удалось скопировать содержимое: %w", err)
+		return fmt.Errorf(i18n.T("fileops_copy_content_error"), err)
 	}
 
 	// Получаем информацию о разрешениях исходного файла
 	srcInfo, err := os.Stat(source)
 	if err != nil {
-		return fmt.Errorf("не удалось получить информацию о файле %s: %w", source, err)
+		return fmt.Errorf(i18n.T("fileops_stat_error"), source, err)
 	}
 
 	// Копируем разрешения
 	err = os.Chmod(destination, srcInfo.Mode())
 	if err != nil {
-		return fmt.Errorf("не удалось скопировать разрешения файла: %w", err)
+		return fmt.Errorf(i18n.T("fileops_chmod_error"), err)
 	}
 
 	return nil
@@ -92,19 +94,19 @@ func (f *FileOperator) CopyDirectory(source, destination string) error {
 	// Получаем информацию об исходной директории
 	srcInfo, err := os.Stat(source)
 	if err != nil {
-		return fmt.Errorf("не удалось получить информацию о директории %s: %w", source, err)
+		return fmt.Errorf(i18n.T("fileops_stat_dir_error"), source, err)
 	}
 
 	// Создаем директорию назначения с теми же разрешениями
 	err = os.MkdirAll(destination, srcInfo.Mode())
 	if err != nil {
-		return fmt.Errorf("не удалось создать директорию %s: %w", destination, err)
+		return fmt.Errorf(i18n.T("fileops_create_dir_error"), destination, err)
 	}
 
 	// Читаем содержимое исходной директории
 	entries, err := os.ReadDir(source)
 	if err != nil {
-		return fmt.Errorf("не удалось прочитать директорию %s: %w", source, err)
+		return fmt.Errorf(i18n.T("fileops_read_dir_error"), source, err)
 	}
 
 	// Копируем каждую запись
@@ -114,7 +116,7 @@ func (f *FileOperator) CopyDirectory(source, destination string) error {
 
 		fileInfo, err := os.Stat(sourcePath)
 		if err != nil {
-			return fmt.Errorf("не удалось получить информацию о файле %s: %w", sourcePath, err)
+			return fmt.Errorf(i18n.T("fileops_stat_error"), sourcePath, err)
 		}
 
 		if fileInfo.IsDir() {
@@ -137,7 +139,7 @@ func (f *FileOperator) CopyDirectory(source, destination string) error {
 func (f *FileOperator) MoveFile(source, destination string) error {
 	err := os.Rename(source, destination)
 	if err != nil {
-		return fmt.Errorf("не удалось переместить %s в %s: %w", source, destination, err)
+		return fmt.Errorf(i18n.T("fileops_move_error"), source, destination, err)
 	}
 	return nil
 }
@@ -151,7 +153,7 @@ func (f *FileOperator) DeleteFile(path string) error {
 func (f *FileOperator) DeleteDirectory(path string) error {
 	err := os.RemoveAll(path)
 	if err != nil {
-		return fmt.Errorf("не удалось удалить директорию %s: %w", path, err)
+		return fmt.Errorf(i18n.T("fileops_delete_dir_error"), path, err)
 	}
 	return nil
 }

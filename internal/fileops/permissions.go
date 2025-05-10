@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"file-manager/internal/i18n"
 )
 
 // PermissionsManager предоставляет функции для управления правами доступа к файлам
@@ -19,13 +21,13 @@ func (p *PermissionsManager) ChangePermissions(path string, permissions string) 
 	// Преобразование строки с восьмеричным числом в uint32
 	mode, err := strconv.ParseUint(permissions, 8, 32)
 	if err != nil {
-		return fmt.Errorf("некорректный формат прав доступа: %w", err)
+		return fmt.Errorf(i18n.T("permissions_invalid_format_error"), err)
 	}
 
 	// Применение новых прав доступа
 	err = os.Chmod(path, os.FileMode(mode))
 	if err != nil {
-		return fmt.Errorf("не удалось изменить права доступа для %s: %w", path, err)
+		return fmt.Errorf(i18n.T("permissions_chmod_error"), path, err)
 	}
 
 	return nil
@@ -36,7 +38,7 @@ func (p *PermissionsManager) GetPermissions(path string) (string, error) {
 	// Получение информации о файле
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return "", fmt.Errorf("не удалось получить информацию о %s: %w", path, err)
+		return "", fmt.Errorf(i18n.T("permissions_stat_error"), path, err)
 	}
 
 	// Преобразование прав доступа в строку восьмеричного числа
@@ -48,7 +50,7 @@ func (p *PermissionsManager) GetPermissions(path string) (string, error) {
 func (p *PermissionsManager) ChangeOwner(path string, uid, gid int) error {
 	err := os.Chown(path, uid, gid)
 	if err != nil {
-		return fmt.Errorf("не удалось изменить владельца для %s: %w", path, err)
+		return fmt.Errorf(i18n.T("permissions_chown_error"), path, err)
 	}
 
 	return nil

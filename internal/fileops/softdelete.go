@@ -7,6 +7,9 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"errors"
+	"file-manager/internal/i18n"
 )
 
 // SoftDeleter определяет интерфейс для soft-delete (корзины)
@@ -35,15 +38,15 @@ type linuxSoftDeleter struct{}
 func (l *linuxSoftDeleter) MoveToTrash(path string) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("не удалось определить домашнюю директорию: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_home_error"), err)
 	}
 	trashDir := filepath.Join(home, ".local", "share", "Trash", "files")
 	infoDir := filepath.Join(home, ".local", "share", "Trash", "info")
 	if err := os.MkdirAll(trashDir, 0755); err != nil {
-		return fmt.Errorf("не удалось создать папку Trash: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_trashdir_error"), err)
 	}
 	if err := os.MkdirAll(infoDir, 0755); err != nil {
-		return fmt.Errorf("не удалось создать папку info: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_infodir_error"), err)
 	}
 	fileName := filepath.Base(path)
 	baseName := fileName
@@ -57,13 +60,13 @@ func (l *linuxSoftDeleter) MoveToTrash(path string) error {
 	}
 	dest := filepath.Join(trashDir, fileName)
 	if err := os.Rename(path, dest); err != nil {
-		return fmt.Errorf("не удалось переместить файл в корзину: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_move_error"), err)
 	}
 	// Создаём .trashinfo
 	trashInfo := fmt.Sprintf("[Trash Info]\nPath=%s\nDeletionDate=%s\n", path, time.Now().Format("2006-01-02T15:04:05"))
 	infoPath := filepath.Join(infoDir, fileName+".trashinfo")
 	if err := os.WriteFile(infoPath, []byte(trashInfo), 0644); err != nil {
-		return fmt.Errorf("не удалось создать trashinfo: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_trashinfo_error"), err)
 	}
 	return nil
 }
@@ -78,7 +81,7 @@ func (l *linuxSoftDeleter) RestoreFromTrash(fileName string) error {
 	infoPath := filepath.Join(infoDir, fileName+".trashinfo")
 	data, err := os.ReadFile(infoPath)
 	if err != nil {
-		return fmt.Errorf("не удалось прочитать trashinfo: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_read_trashinfo_error"), err)
 	}
 	lines := strings.Split(string(data), "\n")
 	var origPath string
@@ -89,11 +92,11 @@ func (l *linuxSoftDeleter) RestoreFromTrash(fileName string) error {
 		}
 	}
 	if origPath == "" {
-		return fmt.Errorf("оригинальный путь не найден в trashinfo")
+		return errors.New(i18n.T("softdelete_origpath_not_found"))
 	}
 	filePath := filepath.Join(trashDir, fileName)
 	if err := os.Rename(filePath, origPath); err != nil {
-		return fmt.Errorf("не удалось восстановить файл: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_restore_error"), err)
 	}
 	if err := os.Remove(infoPath); err != nil {
 		return err
@@ -146,11 +149,11 @@ type macSoftDeleter struct{}
 func (m *macSoftDeleter) MoveToTrash(path string) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("не удалось определить домашнюю директорию: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_home_error"), err)
 	}
 	trashDir := filepath.Join(home, ".Trash")
 	if err := os.MkdirAll(trashDir, 0755); err != nil {
-		return fmt.Errorf("не удалось создать папку .Trash: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_trashdir_error"), err)
 	}
 	fileName := filepath.Base(path)
 	baseName := fileName
@@ -167,8 +170,7 @@ func (m *macSoftDeleter) MoveToTrash(path string) error {
 }
 
 func (m *macSoftDeleter) RestoreFromTrash(_ string) error {
-	// Для macOS: восстановление не реализовано (нет .trashinfo)
-	return fmt.Errorf("восстановление не поддерживается на macOS")
+	return errors.New(i18n.T("softdelete_restore_unsupported_mac"))
 }
 
 func (m *macSoftDeleter) EmptyTrash() error {
@@ -212,11 +214,11 @@ type windowsSoftDeleter struct{}
 func (w *windowsSoftDeleter) MoveToTrash(path string) error {
 	userProfile := os.Getenv("USERPROFILE")
 	if userProfile == "" {
-		return fmt.Errorf("не удалось определить USERPROFILE")
+		return fmt.Errorf(i18n.T("softdelete_userprofile_error"))
 	}
 	trashDir := filepath.Join(userProfile, "Recycle.Bin")
 	if err := os.MkdirAll(trashDir, 0755); err != nil {
-		return fmt.Errorf("не удалось создать папку корзины: %w", err)
+		return fmt.Errorf(i18n.T("softdelete_trashdir_error"), err)
 	}
 	fileName := filepath.Base(path)
 	baseName := fileName
@@ -233,14 +235,13 @@ func (w *windowsSoftDeleter) MoveToTrash(path string) error {
 }
 
 func (w *windowsSoftDeleter) RestoreFromTrash(_ string) error {
-	// Для Windows: восстановление не реализовано (нет .trashinfo)
-	return fmt.Errorf("восстановление не поддерживается на Windows")
+	return fmt.Errorf(i18n.T("softdelete_restore_unsupported_win"))
 }
 
 func (w *windowsSoftDeleter) EmptyTrash() error {
 	userProfile := os.Getenv("USERPROFILE")
 	if userProfile == "" {
-		return fmt.Errorf("не удалось определить USERPROFILE")
+		return fmt.Errorf(i18n.T("softdelete_userprofile_error"))
 	}
 	trashDir := filepath.Join(userProfile, "Recycle.Bin")
 	entries, err := os.ReadDir(trashDir)
@@ -258,7 +259,7 @@ func (w *windowsSoftDeleter) EmptyTrash() error {
 func (w *windowsSoftDeleter) ListTrash() ([]string, error) {
 	userProfile := os.Getenv("USERPROFILE")
 	if userProfile == "" {
-		return nil, fmt.Errorf("не удалось определить USERPROFILE")
+		return nil, fmt.Errorf(i18n.T("softdelete_userprofile_error"))
 	}
 	trashDir := filepath.Join(userProfile, "Recycle.Bin")
 	entries, err := os.ReadDir(trashDir)

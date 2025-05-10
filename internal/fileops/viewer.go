@@ -23,26 +23,23 @@ func NewFileViewer() *FileViewer {
 
 // ViewTextFile показывает содержимое текстового файла
 func (v *FileViewer) ViewTextFile(path string, startLine, maxLines int) ([]string, error) {
-	// Открываем файл для чтения
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf(i18n.T("viewer_open"), path, err)
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			panic(fmt.Errorf("ошибка при закрытии файла %s: %w", path, err))
+			panic(fmt.Errorf(i18n.T("viewer_close_error"), path, err))
 		}
 	}()
 
-	// Проверяем, является ли файл бинарным
 	if isBinaryFile(file) {
-		return nil, fmt.Errorf("невозможно отобразить бинарный файл как текст")
+		return nil, fmt.Errorf(i18n.T("viewer_binary_error"))
 	}
 
-	// Сбрасываем позицию файла в начало после проверки
 	_, err = file.Seek(0, 0)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка сброса позиции файла: %w", err)
+		return nil, fmt.Errorf(i18n.T("viewer_seek_error"), err)
 	}
 
 	// Читаем файл построчно
@@ -68,7 +65,7 @@ func (v *FileViewer) ViewTextFile(path string, startLine, maxLines int) ([]strin
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("ошибка при чтении файла: %w", err)
+		return nil, fmt.Errorf(i18n.T("viewer_read_error"), err)
 	}
 
 	return lines, nil
@@ -78,11 +75,11 @@ func (v *FileViewer) ViewTextFile(path string, startLine, maxLines int) ([]strin
 func (v *FileViewer) GetTotalLines(path string) (int, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return 0, fmt.Errorf("не удалось открыть файл %s: %w", path, err)
+		return 0, fmt.Errorf(i18n.T("viewer_open"), path, err)
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			panic(fmt.Errorf("ошибка при закрытии файла %s: %w", path, err))
+			panic(fmt.Errorf(i18n.T("viewer_close_error"), path, err))
 		}
 	}()
 
@@ -93,7 +90,7 @@ func (v *FileViewer) GetTotalLines(path string) (int, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return 0, fmt.Errorf("ошибка при подсчете строк: %w", err)
+		return 0, fmt.Errorf(i18n.T("viewer_count_error"), err)
 	}
 
 	return lineCount, nil
