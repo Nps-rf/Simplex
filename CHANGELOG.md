@@ -1,3 +1,9 @@
+## 0.2.0 (2025-05-10)
+
+* Merge pull request #2 from Nps-rf/feature/i18n ([3ab91eb](https://github.com/Nps-rf/Simplex/commit/3ab91eb)), closes [#2](https://github.com/Nps-rf/Simplex/issues/2)
+* fix(cd40206821de31a81c463cfb9f60401a010b8017): remove invalid option for goreleaser.yml ([35a238e](https://github.com/Nps-rf/Simplex/commit/35a238e))
+* feat(i18n): added localization for 5 most popular language ([2b2f01a](https://github.com/Nps-rf/Simplex/commit/2b2f01a))
+
 ## <small>0.1.2 (2025-05-10)</small>
 
 * fix(14861871054): resolved lint issues ([9417963](https://github.com/Nps-rf/Simplex/commit/9417963))
