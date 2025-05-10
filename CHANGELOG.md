@@ -1,3 +1,9 @@
+## 0.3.0 (2025-05-10)
+
+* Merge pull request #3 from Nps-rf/feature/i18n-full-support ([f32e953](https://github.com/Nps-rf/Simplex/commit/f32e953)), closes [#3](https://github.com/Nps-rf/Simplex/issues/3)
+* feat(2b2f01a5ddca69d4421a671f975a6f4a947335a5): all modules support i18n in 6 languages ([216d683](https://github.com/Nps-rf/Simplex/commit/216d683))
+* chore: update semver typo :) ([7bc3d52](https://github.com/Nps-rf/Simplex/commit/7bc3d52))
+
 ## 0.1.3 (2025-05-10)
 
 * Merge pull request #2 from Nps-rf/feature/i18n ([3ab91eb](https://github.com/Nps-rf/Simplex/commit/3ab91eb)), closes [#2](https://github.com/Nps-rf/Simplex/issues/2)
