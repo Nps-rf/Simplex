@@ -22,8 +22,8 @@ keywords:
   - архивирование
   - поиск
 
-version: "1.0.0"
-date-released: "2024-06-05"
+version: "0.1.4"
+date-released: "2024-10-05"
 
 url: "https://github.com/Nps-rf/Simplex"
 repository-code: "https://github.com/Nps-rf/Simplex"
@@ -38,6 +38,6 @@ preferred-citation:
   authors:
     - name: "Simplex Team"
   title: "Simplex: Cross‑platform CLI File Manager"
-  version: "1.0.0"
-  date-released: "2024-06-05"
+  version: "0.1.4"
+  date-released: "2024-10-05"
   url: "https://github.com/Nps-rf/Simplex"
