@@ -74,6 +74,11 @@ func (s *Searcher) SearchByContent(root, content string) ([]string, error) {
 		}
 		processedFilesMap[path] = true
 
+		// Проверяем права на чтение файла
+		if info.Mode().Perm()&0400 == 0 {
+			return nil // нет прав на чтение
+		}
+
 		// Открываем файл для чтения
 		file, err := os.Open(path)
 		if err != nil {
