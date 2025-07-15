@@ -4,18 +4,30 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"strings"
+
+	"file-manager/internal/app"
 )
 
 func main() {
-	// Запуск через cmd/filemanager/main.go
-	cmd := exec.Command("go", "run", "cmd/filemanager/main.go")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	err := cmd.Run()
+	fileManager, err := app.NewApp()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Ошибка при запуске файлового менеджера: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Ошибка при инициализации приложения: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Проверяем, есть ли аргументы командной строки
+	args := os.Args[1:]
+
+	if len(args) == 0 {
+		// Если нет аргументов, запускаем интерактивный режим
+		fileManager.Start()
+	} else {
+		// Если есть аргументы, выполняем их как одну команду
+		command := strings.Join(args, " ")
+		err := fileManager.ExecuteCommand(command)
+		if err != nil {
+			os.Exit(1)
+		}
 	}
 }
